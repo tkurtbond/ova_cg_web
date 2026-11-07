@@ -139,13 +139,18 @@ polibfyaml's integer and boolean grammar and messages. The path syntax
 is polibfyaml's (`/1/abilities/2/name`), built on the way down.
 
 - **A file's YAML error is the library's message**, which differs from
-  yaml.v3's and libfyaml's in wording. The fixtures' expected *notices*
-  must match ova_cg_go's exactly; a YAML *syntax* error need only be
-  reported with its line, since `Broken.yaml` is the only fixture that
-  has one, and the test says which part it compares.
-- **A file comes from a `File`, not a path**: `loadAll(text, name)`
-  takes the text and the file's name, which is what a page has. The
-  Go's "missing file" error has no counterpart.
+  yaml.v3's and libfyaml's in wording, in ova_fmt_po's form
+  (`NAME:LINE:COL: error: MESSAGE`) at the same line and column. The
+  fixtures' expected *notices* and the loader's own errors must match
+  exactly; a YAML *syntax* error (no fixture has one: `Broken.yaml`'s
+  are missing keys) is compared by its file, line and column only.
+- **A file comes from a `File`, not a path**: `readEntities(text,
+  name)` and `loadAll(text, name)` take the text and the file's name,
+  which is what a page has. The Go's "missing file" error has no
+  counterpart.
+- **`readEntities` is in entities**, not character as in the Go, so the
+  `yaml` library's reading is in one module and Phase 3.1 can test it.
+  character's `loadAll` calls it.
 
 ### character
 
@@ -154,6 +159,22 @@ is polibfyaml's (`/1/abilities/2/name`), built on the way down.
 `newSpell`, `removeSpell`, `newAttack`, ...), `build`, `fromEntity`
 with its notices, `loadAll`, `recompute`. Optional texts are `?:
 string` (AGENTS.md, "Absence is `undefined`").
+
+- `loadAll(text, name)` and `load` take the file's text and its name,
+  not a path, and return `{ok, value, notices}` or `{ok: false,
+  message}`; the messages are Go's with the name for the path (`NAME
+  holds no characters`, `NAME holds 2 characters, not one`). Go's
+  `openError` has no counterpart: the page has already read the file.
+- Go's `New` is `newCharacter()`, Go's private `newCharacter(k)` is
+  `new Character(k)`; `TraitOf`, `ModOf`, `AttackOf`, `SpellOf` and
+  `SheetOf` are casts. `HasNpcType` is `npcType?:`, `HasFluffField`
+  the `undefined`s of `fluff`, `HasCombatNotes` `combatNotes?:`;
+  `HasCombat`, `HasThreatValue`, `HasOptions`, `HasHalfTV` and
+  `HasCost` stay booleans, since they aren't the absence of a text.
+  `singleSlot` is a public field, for this module only.
+- The edits take a user's text as Go's do, `""` for none, and store
+  `undefined`; `setText(s)` returns the field's new value. A missing
+  detail sorts as `""`, as the loader's sort has it.
 
 ### save
 
@@ -195,6 +216,10 @@ Markdown tab downloads.
 `normalize`, `isAbsolute`, `absolute`, `dir`, `relative`, `rebase`,
 text only, as in Go. Used for the portrait's path only (see "The
 portrait").
+
+A page has no working directory, and core uses no `process`: where
+Go's `Absolute` and `Dir` take the working directory, `"/"` is used,
+as Go's `cwd` falls back to when `os.Getwd` fails.
 
 ### ui
 
@@ -465,7 +490,7 @@ Done (2026-11-07):
 
 ## Phase 3 Files
 
-### Phase 3.1 entities
+### Phase 3.1 entities [done]
 
 `src/core/entities.ts` from `internal/entities`: the loader on `yaml`
 `Document`s, polibfyaml's scalars, the paths, the sort, the errors.
@@ -474,7 +499,67 @@ errors listed (compared as "Module by module", entities, says). Find out how
 the `yaml` library reports line and column, aliases, and a stream of
 several documents (`two-documents`), and record it.
 
-### Phase 3.2 character
+Done (2026-11-07):
+
+- **The `yaml` library's options.** `parseAllDocuments(text, {schema:
+  "failsafe", lineCounter, prettyErrors: false})` (yaml 2.9.1). With
+  the failsafe schema every scalar's value is its source text (`~`,
+  `0x10`, `true` stay strings), for `parseInt` and `parseBool`; an
+  unknown tag (`!!int`) is only a warning, and warnings are ignored.
+  It never throws: errors are in each document's `errors`, and an
+  empty or comments-only file is an `EmptyStream`, an empty array with
+  `empty` set, holding no documents (so no entities).
+- **Absence.** An empty `key:` is a scalar with value `""`, type
+  `PLAIN` and no tag (yaml.v3's style 0, `!!null`), so that is what
+  counts as no value; `? key` gives a value of `null`, which counts as
+  none too. An empty sequence item (`- `) is the same empty scalar,
+  as in yaml.v3. Quoted `''` and a bare `!!str` are present.
+- **Line and column.** A node's `range[0]` is its start, and the
+  `LineCounter`'s `linePos` gives its line and column, both 1-based:
+  `Broken.yaml`'s 24:13, 27:13, 34:15 and 34:15, as ova_fmt_po prints
+  them, and a syntax error's 3:1 as libfyaml's. The columns count
+  UTF-16 units; libfyaml's may count characters, which differ only
+  after an astral character on the line, untested.
+- **Aliases** are `isAlias` nodes, resolved with `resolve(doc)`.
+  Merge keys (`<<`) are not applied, as yaml.v3's nodes don't. No
+  fixture has an alias; the test has one.
+- **Several documents** come in order, and each document's errors
+  are reported before its entities are read, as yaml.v3's decoder and
+  libfyaml's stream do it, document by document.
+- **A duplicate key** is a document error ("Map keys must be unique"),
+  as in libfyaml ("duplicate key"), and kept so.
+- **Finding: the quoted text in polibfyaml's messages is not
+  escaped.** ova_fmt_po says `not a valid integer: "a<TAB>b"` and
+  `"a"b\\c"`, the text as it is in plain double quotes; ova_cg_go's
+  Go `%q` escapes it (`"a\tb"`). ova_cg_po wins, so `quoted` writes
+  ova_fmt_po's. The difference is ova_cg_go's, for its PLAN.md.
+- **Records** are interfaces, with Go's `HasX`/`X` pairs as an
+  optional `x?:` (absent fields are left out of the object, not set
+  to `undefined`); `HasCombat` and `HasFluff` stay, since a block can
+  be present and empty, and `fluff` is an array of `string |
+  undefined`. `Overrides` is a bit set in a `number` with `has` and
+  `withKey` (`with` is reserved).
+- **A fatal error is thrown** inside the loader, as a private `Fatal`,
+  rather than returned from every function, and `Loader.load` turns it
+  back into a result; nothing else throws for bad input.
+- **Folding is bytewise, by UTF-8**, as the Go's: `foldCI` gives a
+  string of one character per byte, so `===` and `<` compare as Go's
+  strings do. The UTF-8 is encoded by hand: core's library (ES2022)
+  has no `TextEncoder`.
+- **Integers** are converted exactly with `BigInt`, so a long one is
+  "out of range", as Go's `ParseInt` overflowing is.
+- **The checks.** There is no `entities_test.go` (ova_cg_go tests the
+  loader through character's and save's tests); `entities.test.ts`
+  loads every fixture, lists `Broken.yaml`'s errors with their lines
+  and columns, reads `two-documents`, compares 13 malformed cases with
+  ova_fmt_po's output for them, and checks absence, the fields, the
+  grammar, the sort and `trim`. Planted bugs each failed a test: an
+  empty value present; no sort; the location taken from the missing
+  key; 2^31 accepted; `__` accepted; Combat Notes untrimmed; no
+  `barrier`; no Latin-1 fold; a later document's errors ignored;
+  `npc-type` untrimmed; aliases unresolved; `True` refused.
+
+### Phase 3.2 character [done]
 
 `src/core/character.ts` from `internal/character`: the records, the
 edits, `build`, `fromEntity` and its notices, `loadAll`, `one`,
@@ -483,10 +568,38 @@ edits, `build`, `fromEntity` and its notices, `loadAll`, `one`,
 samples: every number their files hold, and the two rulings as
 overrides (moved here from Phase 2, as in ova_cg_go).
 
-### Phase 3.3 paths
+Done (2026-11-07):
+
+- The port is as "character" above says. `adopt` copies a
+  `calc.Number` with `Object.assign` where Go copies the struct.
+- The checks are Go's, with its labels: `TestSamples/NAME` for each
+  of the twelve samples (every number its file holds comes out of
+  `calc`, with no warnings, and Braun's and Natsuki's rulings computed
+  first, then as overrides), `TestLoadNotices`, `TestModel` and
+  `TestLoadBoss`. All pass on the first run: the samples are
+  reproduced by Phase 2's `calc` through this loader. Go's missing
+  file check is replaced by an empty text, which holds no characters.
+- Planted bugs, each failing a test: no Endurance Use link to an
+  Ability; none to an attack; `counts-as` ignored; a listed override
+  not adopted; no notice for an unlisted one; `transformed` dropped; a
+  Companion built as a character's sheet; a Boss as an Extra;
+  Weaknesses sorted first; `copyMods` sharing the mods; a detail
+  matched case-sensitively. One passed and is equivalent: dropping the
+  last `recompute` in `adoptNumbers`, after TV is adopted, changes
+  nothing, since nothing calc computes depends on TV.
+
+### Phase 3.3 paths [done]
 
 `src/core/paths.ts` from `internal/paths`; `paths.test.ts` from
 `paths_test.go`.
+
+Done (2026-11-07): a line-for-line port, with the working directory
+`"/"` ("paths" above). `TestPaths` has Go's 21 checks with its labels,
+the three that used the working directory expecting `"/"`, and one
+more for a relative base. Planted bugs, each failing it: a leading
+`..` of a relative path dropped; a `..` at the root kept; a name's
+prefix taken for a directory; `""` for nothing left, not `"."`; a
+relative path rebased with no `from`; `Dir` at the root `""`.
 
 ### Phase 3.4 save
 
