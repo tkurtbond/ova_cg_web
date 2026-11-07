@@ -16,10 +16,17 @@
 // (tell, ask, confirm, chooseFile, askText, download, openPage), each
 // taking a callback for its answer, so a test can answer it.
 //
-// Phase 5 is the shell: the tabs are empty, and a menu item whose phase
-// hasn't come has no action and stays disabled (PLAN.md, "Build order").
+// Files (PLAN.md, "Files in the browser"): Open... reads a file the user
+// chooses, or drops on the page; Save and Save As... download, and a
+// download counts as saved. New, Open... and a drop ask first whether to
+// save changes (mayLeave), and closing the tab with changes gets the
+// browser's own question (beforeunload).
+//
+// The tabs are empty until Phase 7, and a menu item whose phase hasn't
+// come has no action and stays disabled (PLAN.md, "Build order").
 
 import * as character from "../core/character.ts";
+import * as save from "../core/save.ts";
 import * as dialogs from "./dialogs.ts";
 import { keyMatches, MenuBar, MenuItem, Separator, type Key } from "./menu.ts";
 
@@ -144,8 +151,10 @@ export class Window {
       new MenuItem(doc, label, key, action);
     this.newItem = item("New", keys.new, () => this.newCharacter());
     this.openItem = item("Open...", keys.open, () => this.open());
-    this.saveItem = item("Save", keys.save); // Phase 6
-    this.saveAsItem = item("Save As...", keys.saveAs); // Phase 6
+    this.saveItem = item("Save", keys.save, () => this.save(() => {}));
+    this.saveAsItem = item("Save As...", keys.saveAs, () =>
+      this.saveAs(() => {}),
+    );
     this.limitsItem = item("Limits...", keys.limits); // Phase 10
     this.transformedItem = item("Transformed form", keys.transformed); // Phase 9
     this.addCharacterItem = item("Add Character"); // Phase 11, and below
@@ -225,6 +234,11 @@ export class Window {
 
     app.replaceChildren(this.titleLine, bar, tablist, panels);
     doc.addEventListener("keydown", (e) => this.key(e));
+    doc.addEventListener("dragover", (e) => this.dragOver(e));
+    doc.addEventListener("drop", (e) => this.drop(e));
+    doc.defaultView?.addEventListener("beforeunload", (e) =>
+      this.beforeUnload(e),
+    );
     this.showTab(0);
     this.take(character.one(character.newCharacter()), undefined);
   }
@@ -400,17 +414,142 @@ export class Window {
     return this.load(text, f.name);
   }
 
-  // Phase 6 asks first whether to save the changes (mayLeave); until
-  // then nothing on the page can change a character.
+  /**
+   * saveTo downloads the characters as the file named name, which they
+   * are then saved as. The portrait's path is kept as it is (PLAN.md,
+   * "The portrait"): the page knows no directory to rebase it from or
+   * to.
+   */
+  saveTo(name: string): void {
+    this.download(name, save.allToText(this.characters));
+    this.file = name;
+    this.modified = false;
+    this.showTitle();
+  }
+
+  /**
+   * saveAs asks for a file name and saves as it; then(saved). It
+   * suggests the file's name, else the first character's.
+   */
+  saveAs(then: (saved: boolean) => void): void {
+    this.askText(
+      "Save the characters as:",
+      this.file ?? fileName(this.characters[0]!.name),
+      (text, ok) => {
+        if (!ok) {
+          then(false);
+          return;
+        }
+        const name = fileName(text);
+        if (name === "") {
+          this.tell("The file needs a name.");
+          then(false);
+          return;
+        }
+        this.saveTo(name);
+        then(true);
+      },
+    );
+  }
+
+  /**
+   * save saves as the file's name; a new file as the first character's
+   * name, or, with no name, asks for one; then(saved).
+   */
+  save(then: (saved: boolean) => void): void {
+    const name = this.file ?? fileName(this.characters[0]!.name);
+    if (name === "") {
+      this.saveAs(then);
+      return;
+    }
+    this.saveTo(name);
+    then(true);
+  }
+
+  /**
+   * mayLeave calls then once the characters may be put away: saved, or
+   * the user doesn't want them saved; never if the user cancels.
+   */
+  mayLeave(then: () => void): void {
+    if (!this.modified) {
+      then();
+      return;
+    }
+    let name: string;
+    if (this.file !== undefined) name = this.file;
+    else if (this.characters.length > 1) name = "the characters";
+    else if (this.character.name !== "") name = this.character.name;
+    else name = "the character";
+    this.ask("Save the changes to " + name + " first?", (a) => {
+      switch (a) {
+        case SaveFirst:
+          this.save((ok) => {
+            if (ok) then();
+          });
+          break;
+        case Discard:
+          then();
+          break;
+      }
+    });
+  }
 
   newCharacter(): void {
-    this.take(character.one(character.newCharacter()), undefined);
+    this.mayLeave(() =>
+      this.take(character.one(character.newCharacter()), undefined),
+    );
   }
 
   open(): void {
-    this.chooseFile(".yaml,.yml", (f) => {
+    this.mayLeave(() =>
+      this.chooseFile(".yaml,.yml", (f) => {
+        void this.loadFile(f);
+      }),
+    );
+  }
+
+  /**
+   * dropped opens files, dropped on the page, as Open... would; one
+   * file only. While a dialog is open a drop does nothing.
+   */
+  dropped(files: readonly File[]): void {
+    if (this.dialogs.open) return;
+    if (files.length !== 1) {
+      this.tell("Drop one file on the page to open it.");
+      return;
+    }
+    const f = files[0]!;
+    this.mayLeave(() => {
       void this.loadFile(f);
     });
+  }
+
+  /**
+   * A drag bringing files is taken, for drop. Dropped files are always
+   * taken, so the browser never opens one in place of the page.
+   */
+  private dragOver(e: DragEvent): void {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer!.dropEffect = this.dialogs.open ? "none" : "copy";
+  }
+
+  private drop(e: DragEvent): void {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    this.dropped([...e.dataTransfer!.files]);
+  }
+
+  /**
+   * Closing or reloading the page with changes: the browser asks, in
+   * its own words.
+   */
+  private beforeUnload(e: BeforeUnloadEvent): void {
+    if (!this.modified) return;
+    // preventDefault alone brings up the browser's question in headless
+    // Chromium 158 and Firefox 159, once the page has had a click
+    // (test/browser/files.spec.ts); the old returnValue isn't needed.
+    e.preventDefault();
   }
 
   // ---- What would wait for the user, done by the browser ----
@@ -437,7 +576,9 @@ export class Window {
 
   /**
    * downloadText is download's: a link to a Blob of text, clicked, the
-   * Blob let go a minute later. Phase 6 checks it in both browsers.
+   * Blob let go a minute later. In headless Chromium 158 and Firefox 159
+   * it downloads the text under the name, byte for byte, and also after
+   * the save-first <dialog> (test/browser/files.spec.ts).
    */
   private downloadText(name: string, text: string): void {
     const view = this.doc.defaultView;
@@ -454,4 +595,20 @@ export class Window {
     a.remove();
     view.setTimeout(() => view.URL.revokeObjectURL(url), 60_000);
   }
+}
+
+/**
+ * fileName is the file name text gives: trimmed, without a directory
+ * (a "/" or "\\" becomes "_"), ending in .yaml unless it ends in .yaml
+ * or .yml already; "" for no text.
+ */
+export function fileName(text: string): string {
+  const t = text.trim().replace(/[/\\]/g, "_");
+  if (t === "") return "";
+  return /\.ya?ml$/i.test(t) ? t : t + ".yaml";
+}
+
+/** hasFiles says whether a drag brings files. */
+function hasFiles(e: DragEvent): boolean {
+  return e.dataTransfer?.types.includes("Files") ?? false;
 }

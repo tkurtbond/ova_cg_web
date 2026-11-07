@@ -176,8 +176,8 @@ test("the menus: greyed until their phase, and by keyboard", () => {
     .map((it) => it.label);
   assert.deepEqual(
     enabled,
-    ["New", "Open..."],
-    "only New and Open... do anything yet",
+    ["New", "Open...", "Save", "Save As..."],
+    "only File's items do anything yet",
   );
   const tops = [0, 1, 2].map((i) => w.menu.top(i));
   assert.deepEqual(
@@ -193,12 +193,15 @@ test("the menus: greyed until their phase, and by keyboard", () => {
   ]);
   press(doc, { key: "ArrowDown" });
   press(doc, { key: "ArrowDown" });
-  assert.ok(
-    doc.activeElement === w.newItem.button,
-    "Down skips Save and Save As, and wraps",
-  );
+  press(doc, { key: "ArrowDown" });
+  assert.ok(doc.activeElement === w.saveAsItem.button, "Down to Save As...");
+  press(doc, { key: "ArrowDown" });
+  assert.ok(doc.activeElement === w.newItem.button, "Down wraps to New");
   press(doc, { key: "ArrowUp" });
-  assert.ok(doc.activeElement === w.openItem.button, "Up wraps to Open...");
+  assert.ok(
+    doc.activeElement === w.saveAsItem.button,
+    "Up wraps to Save As...",
+  );
   press(doc, { key: "ArrowRight" });
   checks([
     [

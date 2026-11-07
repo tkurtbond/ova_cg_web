@@ -20,6 +20,10 @@ export interface Fakes {
   yes: boolean; // what confirm answers,
   confirmed: number; // and how often it was asked
   chosen: string | undefined; // the fixture chooseFile gives; undefined: cancelled
+  chooses: number; // how often chooseFile was asked
+  typed: string | undefined; // what askText answers; undefined: cancelled
+  texts: number; // how often askText was asked,
+  suggested: string; // and the text it began with last
   downloads: { name: string; text: string }[];
   page: number; // the last page openPage was asked for
 }
@@ -48,6 +52,10 @@ export function newWindow(): {
     yes: false,
     confirmed: 0,
     chosen: undefined,
+    chooses: 0,
+    typed: undefined,
+    texts: 0,
+    suggested: "",
     downloads: [],
     page: 0,
   };
@@ -66,11 +74,17 @@ export function newWindow(): {
     then(f.yes);
   };
   w.chooseFile = (_accept, then) => {
+    f.chooses++;
     if (f.chosen === undefined) return;
     const text = readFileSync(DATA_DIR + f.chosen, "utf8");
     then(new happy.File([text], f.chosen) as unknown as File);
   };
-  w.askText = (_p, _text, then) => then("", false);
+  w.askText = (_p, text, then) => {
+    f.texts++;
+    f.suggested = text;
+    if (f.typed === undefined) then("", false);
+    else then(f.typed, true);
+  };
   w.download = (name, text) => f.downloads.push({ name, text });
   w.openPage = (p) => (f.page = p);
   return { w, f, doc, happy };
@@ -79,6 +93,11 @@ export function newWindow(): {
 /** load opens the fixture name, as the page would. */
 export function load(w: Window, name: string): boolean {
   return w.load(readFileSync(DATA_DIR + name, "utf8"), name);
+}
+
+/** settled waits until a file's text, being read, has been loaded. */
+export function settled(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 20));
 }
 
 /** A key pressed on target (the focused element, by default). */

@@ -796,13 +796,62 @@ through a function (`answer()`, `tab()`). And `HTMLElement.hidden` is
 `boolean | "until-found"` in TypeScript 7's DOM types, so a check
 compares it with `=== true`.
 
-## Phase 6 Files on the page
+## Phase 6 Files on the page [done]
 
 New, Open... (input and drop), Save and Save As... (downloads, the
 name, the ` *`), the save-first question, `beforeunload`, the notices
 on opening, a file that can't be read or holds mistakes reported in a
 dialog and nothing else changed. Playwright checks a download's bytes
 against `allToText` and that a downloaded file opens again.
+
+Done (2026-11-07). `Window.save`, `saveAs` and `mayLeave` port
+ova_cg_go's, with `download` in place of a file written. Decisions:
+
+- **The name a new file saves as** is `fileName` of the first
+  character's name: trimmed, `/` and `\` made `_`, `.yaml` added unless
+  it ends in `.yaml` or `.yml` (any case). With no name, Save is Save
+  As..., suggesting nothing; an empty name typed there is told ("The
+  file needs a name.") and nothing is saved.
+- **The save-first question** names the file, else "the characters"
+  for several, else the character's name, else "the character", as
+  ova_cg_go's does. Save there, cancelled at the name, leaves
+  everything as it was.
+- **A drop** must be exactly one file (two or more are told "Drop one
+  file on the page to open it."), asks first like Open..., and does
+  nothing under a dialog. A drag of files always has its default
+  prevented, so a missed drop never makes the browser open the file in
+  place of the page. A drag of anything else (text) is left to the
+  browser.
+- **`globalThis.ova` is the `Window`**, so a browser test can mark a
+  change before Phase 7 gives the page fields to change.
+
+`test/ui/files.test.ts` ports the "Files" checks of ova_cg_go's
+`TestWindow` and `testSeveral` on happy-dom. `test/browser/files.spec.ts`
+checks the following in headless Chromium 158 and Firefox 159:
+
+- a download's name and bytes (`test/golden/`), and that it opens again
+  with no dialog;
+- Save As... and Ctrl+S;
+- Group.yaml's notices, and a bad file told with the title unchanged;
+- after the save-first `<dialog>`, the file chooser still opens and a
+  download is still made (the click on the dialog's button is the
+  user's activation);
+- a `DragEvent` drop;
+- `beforeunload`.
+
+In both browsers `preventDefault()` alone brought up the beforeunload
+question once the page had had a click, so the deprecated
+`returnValue` isn't set. Planted, failing:
+
+- beforeunload never prevented;
+- every drag taken (only the browser test sees it);
+- only the shown character saved;
+- a drop under a dialog opened (only the unit test sees it).
+
+Finding: `openFile` in `test/browser/page.ts` returns once the file is
+chosen, but the page reads the file after that. A change marked at once
+was then cleared by the load, and the test failed only under the full
+run's load. `files.spec.ts`'s `opens` waits for the title first.
 
 ## Phase 7 The Character and Attacks tabs
 

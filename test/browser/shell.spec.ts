@@ -35,7 +35,7 @@ test("the menus, by mouse and by keyboard", async ({ page }) => {
   await expect(fileMenu).toBeHidden();
   await file.click();
   await expect(fileMenu).toBeVisible();
-  await expect(page.getByRole("menuitem", { name: /^Save As/ })).toBeDisabled();
+  await expect(page.getByRole("menuitem", { name: /^Save As/ })).toBeEnabled();
   // Over another menu's name, that menu opens instead.
   await page.getByRole("menuitem", { name: "Character" }).hover();
   await expect(charMenu).toBeVisible();
@@ -52,7 +52,13 @@ test("the menus, by mouse and by keyboard", async ({ page }) => {
   await expect(page.getByRole("menuitem", { name: /^New/ })).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem", { name: /^Open/ })).toBeFocused();
-  // Down skips the disabled Save and Save As, and wraps to New.
+  await page.keyboard.press("ArrowDown");
+  await expect(
+    page.getByRole("menuitem", { name: /^Save\b(?! As)/ }),
+  ).toBeFocused();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem", { name: /^Save As/ })).toBeFocused();
+  // Down wraps to New.
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem", { name: /^New/ })).toBeFocused();
   await page.keyboard.press("ArrowRight");
@@ -96,7 +102,7 @@ test("the keys reach the page", async ({ page }) => {
   // Alt+Shift+N is New.
   await page.keyboard.press("Alt+Shift+N");
   await expect(page).toHaveTitle(title);
-  // Ctrl+S is prevented, though Save is disabled until Phase 6.
+  // Ctrl+S is prevented (a nameless character: Save asks for a name).
   const prevented = await page.evaluate(() => {
     const e = new KeyboardEvent("keydown", {
       key: "s",
@@ -128,8 +134,6 @@ test("every key reaches the page and is prevented", async ({ page }) => {
     });
   });
   const pressed: [string, string][] = [
-    ["Control+s", "KeyS"],
-    ["Control+Shift+S", "KeyS"],
     ["Control+e", "KeyE"],
     ["Alt+Shift+N", "KeyN"],
     ["Alt+Shift+T", "KeyT"],
@@ -137,11 +141,28 @@ test("every key reaches the page and is prevented", async ({ page }) => {
     ["Alt+Shift+PageUp", "PageUp"],
   ];
   for (const [key] of pressed) await page.keyboard.press(key);
+  // The Saves last, after New: a named character, so Ctrl+S downloads;
+  // then Ctrl+Shift+S asks for a name, and a key under a dialog is the
+  // dialog's.
+  await page.evaluate(() => {
+    (
+      globalThis as unknown as { ova: { character: { name: string } } }
+    ).ova.character.name = "Ai";
+  });
+  const saves: [string, string][] = [
+    ["Control+s", "KeyS"],
+    ["Control+Shift+S", "KeyS"],
+  ];
+  for (const [key] of saves) await page.keyboard.press(key);
+  pressed.push(...saves);
   const seen = await page.evaluate(
     () => (window as unknown as { seen: string[] }).seen,
   );
   expect(seen).toEqual(pressed.map(([, code]) => `${code} true`));
-  await expect(page).toHaveTitle(title); // nothing opened or changed
+  await expect(page).toHaveTitle(title + " - Ai.yaml"); // Ctrl+S saved
+  await expect(page.locator("dialog[open]")).toContainText(
+    "Save the characters as:",
+  );
 });
 
 test("a dialog: Escape closes it, the focus goes back", async ({ page }) => {
