@@ -925,12 +925,62 @@ with Incorporeal Form.
 - `files.spec.ts`'s `changed` now types over the Character Name and
   puts it back, instead of setting `modified` by hand.
 
-## Phase 8 The Background and Fluff tabs
+## Phase 8 The Background and Fluff tabs [done]
 
 Summary, Background, Appearance, Personality, Character Hooks and
 Other Notes; the portrait as "The portrait" decides; the fluff fields;
 the notes (header and text, added, changed and removed as the traits
 are). `test/ui/background.test.ts` from `background_test.go`.
+
+### Phase 8: decisions and findings
+
+- The tabs are `src/ui/background.ts`'s `Background`, which builds
+  both panels. `test/ui/background.test.ts` ports Go's
+  `TestBackground` with Go's labels where the page does as Go does;
+  its portrait checks are this page's (below). A second test checks
+  that showing a character's tabs is no change.
+  `test/browser/background.spec.ts` covers what happy-dom can't, in
+  Chromium and Firefox:
+  - a PNG and an SVG chosen and shown, within the 160 by 200 box;
+  - a file that isn't an image, said so;
+  - Show... for a loaded file's path;
+  - the five prose sections sharing the tab's height;
+  - the fields and a note typed in.
+- Go's `Background.filling` is `Window.filling` here, as every other
+  handler's guard.
+- The portrait, as "The portrait" decides:
+  - **Choose...** sets the path to the image's file name, and is a
+    change.
+  - **Show...** shows an image for the path as it is, and is no change.
+  - Images are kept for the session in a map from path to a `blob:`
+    URL, so a file loaded again (or another character with the same
+    path) shows the image picked before.
+  - An `<img>` `error` event forgets the image and says "The image
+    can't be read.", keeping the path.
+  - Show... and Remove are disabled when there is no portrait.
+- **Finding:** happy-dom never fires an image's `load` or `error`
+  event, so the unit test fires `error` itself; whether an image is
+  shown is the browser test's. Its `File` works only with its own
+  window's `URL.createObjectURL`, not Node's, so the page uses
+  `doc.defaultView.URL`.
+- **Finding:** Chromium reports a `blob:` image's load as a request;
+  Firefox doesn't. `watch()` in `test/browser/page.ts` leaves `blob:`
+  and `data:` URLs out of the no-network check.
+- `checker`, `saved`, `typeIn` and `chooseIn` moved from
+  `sheet.test.ts` to `test/ui/setup.ts`. The `chooseFile` fake records
+  the `accept` it was given, and gives `Fakes.file` when set.
+- Planted, failing:
+  - `hasFluff` not kept;
+  - the prose not trimmed;
+  - Show... counted as a change;
+  - Choose... keeping no image;
+  - Remove with nothing selected removing a note;
+  - an unreadable image remembered;
+  - Show... never disabled;
+  - `background.show` not called by `showAll`;
+  - Change appending instead of replacing.
+- Not planted: `show()` without `filling`, since setting a value fires
+  no `input` event, so that bug can't be seen.
 
 ## Phase 9 Linked content
 
@@ -1034,3 +1084,4 @@ and the browsers that ova_cg_go's design didn't have to know.
 - Distribution: a GitHub release asset, GitHub Pages, or both?
 - Is a dropped file's or chosen image's name enough for the portrait,
   or should **Choose...** ask for the path as text too?
+  (Phase 8 uses the name alone, as "The portrait" decides.)

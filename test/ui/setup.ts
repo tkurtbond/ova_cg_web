@@ -4,7 +4,9 @@
 // real dialogs are tested in dialogs.test.ts, and in the browsers by
 // test/browser/shell.spec.ts.
 
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import * as save from "../../src/core/save.ts";
 import { Window as HappyWindow } from "happy-dom";
 import { Cancel, Window, type Answer } from "../../src/ui/window.ts";
 
@@ -20,6 +22,8 @@ export interface Fakes {
   yes: boolean; // what confirm answers,
   confirmed: number; // and how often it was asked
   chosen: string | undefined; // the fixture chooseFile gives; undefined: cancelled
+  file: File | undefined; // or, if not undefined, this file
+  accepted: string; // the types chooseFile was last asked for
   chooses: number; // how often chooseFile was asked
   typed: string | undefined; // what askText answers; undefined: cancelled
   texts: number; // how often askText was asked,
@@ -52,6 +56,8 @@ export function newWindow(): {
     yes: false,
     confirmed: 0,
     chosen: undefined,
+    file: undefined,
+    accepted: "",
     chooses: 0,
     typed: undefined,
     texts: 0,
@@ -73,8 +79,13 @@ export function newWindow(): {
     f.question = q;
     then(f.yes);
   };
-  w.chooseFile = (_accept, then) => {
+  w.chooseFile = (accept, then) => {
     f.chooses++;
+    f.accepted = accept;
+    if (f.file !== undefined) {
+      then(f.file);
+      return;
+    }
     if (f.chosen === undefined) return;
     const text = readFileSync(DATA_DIR + f.chosen, "utf8");
     then(new happy.File([text], f.chosen) as unknown as File);
@@ -114,4 +125,38 @@ export function press(
   });
   (target ?? doc.activeElement ?? doc.body).dispatchEvent(e);
   return e;
+}
+
+/** check collects a failed check's label, as Go's t.Error. */
+export function checker(): {
+  check: (ok: boolean, label: string) => void;
+  done: () => void;
+} {
+  const failures: string[] = [];
+  return {
+    check: (ok, label) => {
+      if (!ok) failures.push(label);
+    },
+    done: () => assert.deepEqual(failures, []),
+  };
+}
+
+/** saved is what Save would write of the character shown. */
+export function saved(w: Window): string {
+  return save.toText(w.character);
+}
+
+/** typeIn sets an entry's text as the user does: an input event. */
+export function typeIn(
+  e: HTMLInputElement | HTMLTextAreaElement,
+  text: string,
+): void {
+  e.value = text;
+  e.dispatchEvent(new e.ownerDocument.defaultView!.Event("input"));
+}
+
+/** chooseIn chooses option i of s as the user does: a change event. */
+export function chooseIn(s: HTMLSelectElement, i: number): void {
+  s.selectedIndex = i;
+  s.dispatchEvent(new s.ownerDocument.defaultView!.Event("change"));
 }

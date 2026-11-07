@@ -30,8 +30,8 @@
 // beside it. A change goes into the character, which is computed again
 // (changed), and the numbers shown again.
 //
-// The Background, Fluff and Markdown tabs are empty until their phases,
-// and a menu item whose phase hasn't come has no action and stays
+// The Background and Fluff tabs are background.ts's. The Markdown tab
+// is empty until its phase, and a menu item whose phase hasn't come has no action and stays
 // disabled (PLAN.md, "Build order").
 
 import * as calc from "../core/calc.ts";
@@ -40,6 +40,7 @@ import * as entities from "../core/entities.ts";
 import * as rules from "../core/rules.ts";
 import * as save from "../core/save.ts";
 import { AttackDialog } from "./attack.ts";
+import { Background } from "./background.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
 import { bold, el, Lines, NumberBox, notANumber } from "./widgets.ts";
@@ -255,6 +256,8 @@ export class Window {
   readonly addAttack: HTMLButtonElement;
   /** The attack dialog; undefined when closed */
   attack: AttackDialog | undefined = undefined;
+  /** The Background and Fluff tabs */
+  readonly background: Background;
 
   /**
    * The file's characters, in order, and the one shown,
@@ -529,6 +532,11 @@ export class Window {
       sheetNumbers,
     );
 
+    // ---- The Background and Fluff tabs ----
+    this.background = new Background(doc, this);
+    this.panels[2]!.append(this.background.element);
+    this.panels[3]!.append(this.background.fluff);
+
     doc.addEventListener("keydown", (e) => this.key(e));
     doc.addEventListener("dragover", (e) => this.dragOver(e));
     doc.addEventListener("drop", (e) => this.drop(e));
@@ -665,6 +673,7 @@ export class Window {
     this.weaknesses.show(c, undefined, c);
     this.showTransformed();
     this.showRows();
+    this.background.show();
     this.showCharacters();
     this.showTitle();
   }

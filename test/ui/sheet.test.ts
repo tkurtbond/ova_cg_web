@@ -14,7 +14,6 @@ import * as calc from "../../src/core/calc.ts";
 import * as character from "../../src/core/character.ts";
 import * as entities from "../../src/core/entities.ts";
 import * as rules from "../../src/core/rules.ts";
-import * as save from "../../src/core/save.ts";
 import {
   AbilityPoints,
   Discard,
@@ -27,21 +26,7 @@ import {
   type Window,
 } from "../../src/ui/window.ts";
 import { BossDivider, type Panel } from "../../src/ui/widgets.ts";
-import { load, newWindow } from "./setup.ts";
-
-/** check collects a failed check's label, as Go's t.Error. */
-function checker(): {
-  check: (ok: boolean, label: string) => void;
-  done: () => void;
-} {
-  const failures: string[] = [];
-  return {
-    check: (ok, label) => {
-      if (!ok) failures.push(label);
-    },
-    done: () => assert.deepEqual(failures, []),
-  };
-}
+import { checker, chooseIn, load, newWindow, saved, typeIn } from "./setup.ts";
 
 /**
  * allShown says whether every number box of the sheet and the Attacks
@@ -97,22 +82,6 @@ function traitNamed(w: Window, name: string): character.Trait | undefined {
     if (x.name === name) return x;
   }
   return undefined;
-}
-
-function saved(w: Window): string {
-  return save.toText(w.character);
-}
-
-/** typeIn sets an entry's text as the user does: an input event. */
-function typeIn(e: HTMLInputElement | HTMLTextAreaElement, text: string): void {
-  e.value = text;
-  e.dispatchEvent(new e.ownerDocument.defaultView!.Event("input"));
-}
-
-/** chooseIn chooses option i of s as the user does: a change event. */
-function chooseIn(s: HTMLSelectElement, i: number): void {
-  s.selectedIndex = i;
-  s.dispatchEvent(new s.ownerDocument.defaultView!.Event("change"));
 }
 
 test("TestWindow: the Character and Attacks tabs", () => {

@@ -543,3 +543,113 @@ input.number-override {
   min-width: 0;
   padding: 3px 8px;
 }
+
+/* ---- The Background tab: the summary, and five sections sharing the
+   height ---- */
+
+.background {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: 100%;
+  min-height: 560px;
+  box-sizing: border-box;
+}
+
+.prose {
+  flex: 1;
+  display: grid;
+  grid-template-rows: repeat(5, minmax(80px, 1fr));
+  gap: 6px;
+}
+
+.prose-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.prose-section > .heading {
+  margin: 0 0 2px;
+}
+
+textarea.prose-text,
+textarea.note-text {
+  flex: 1;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: none;
+}
+
+/* ---- The Fluff tab ---- */
+
+.row.portrait {
+  align-items: flex-start;
+  flex-wrap: nowrap;
+}
+
+.portrait-box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border: 1px solid;
+  border-color: var(--dark) var(--light) var(--light) var(--dark);
+  overflow: hidden;
+  text-align: center;
+  padding: 4px;
+}
+
+.portrait-box > * {
+  grid-area: 1 / 1;
+}
+
+.portrait-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.portrait-image[hidden] {
+  display: none;
+}
+
+.portrait-side {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.portrait-path {
+  width: 380px;
+  max-width: 100%;
+  min-height: 1.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fluff-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.fluff-label {
+  text-align: right;
+}
+
+.lines.notes {
+  height: 160px;
+}
+
+.note-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 160px;
+}

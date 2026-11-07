@@ -1,5 +1,6 @@
 // What every browser test needs: the built page's file:// URL, and a
-// record of what the page asked the network for and said on its console.
+// record of what the page asked the network for (blob: and data: URLs
+// aside) and said on its console.
 
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
@@ -15,8 +16,12 @@ export interface Watch {
 /** Starts recording; call before page.goto. */
 export function watch(page: Page): Watch {
   const w: Watch = { requests: [], errors: [] };
+  // A blob: or data: URL is the page's own memory, not the network:
+  // Chromium reports the portrait's blob: image as a request, Firefox
+  // doesn't (both seen in Phase 8).
   page.on("request", (r) => {
-    if (r.url() !== PAGE_URL) w.requests.push(r.url());
+    const u = r.url();
+    if (u !== PAGE_URL && !/^(blob|data):/.test(u)) w.requests.push(u);
   });
   page.on("console", (m) => {
     if (m.type() === "error") w.errors.push(m.text());
