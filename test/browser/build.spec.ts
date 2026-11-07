@@ -8,7 +8,9 @@ test("the page opens from file://, fetching nothing", async ({ page }) => {
   const w = watch(page);
   await page.goto(PAGE_URL);
   await expect(page).toHaveTitle("OVA Character Generator");
-  await expect(page.locator("#app")).toHaveText("OVA Character Generator");
+  await expect(page.locator(".title-line")).toHaveText(
+    "OVA Character Generator",
+  );
   expect(w.requests).toEqual([]);
   expect(w.errors).toEqual([]);
 });

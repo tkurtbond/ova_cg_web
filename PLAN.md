@@ -334,16 +334,34 @@ neither the file's directory nor any other file. So:
 ### Keys
 
 A page gets a key only if the browser lets it have it. ova_cg_po's keys,
-and what the page does with each (to be confirmed in Phase 5.2 in
-headless Chromium and Firefox, and by the user in a real browser):
+and what the page does with each (`keys` in `src/ui/window.ts`). In
+Phase 5.2 each reached the page in headless Chromium and Firefox and was
+prevented (`test/browser/shell.spec.ts`). Headless, the browsers' own
+shortcuts never act, so each key was also pressed in the real browsers
+(Chromium 154, Firefox 156, 2026-11-07), windowed on a private Xvfb with
+openbox, through `xdotool key` (XTEST, the server's real keymap: `wtype`
+on a headless sway sends its own keymap, and every `code` came out as
+`Escape`). Every key in the table reached the page with the right `key`
+and `code` and was prevented, and the focus stayed in the page; no tab
+or window opened. A control page that prevents nothing showed the
+method sees the browser act: Ctrl+E took the focus to Chromium's
+omnibox, and Ctrl+T never reached the page and opened a tab in both.
+In Firefox 156 an unprevented Ctrl+E did nothing visible. Ctrl+L, which
+the page doesn't use, took the focus to the address bar in both when
+unprevented (the page saw the keydown, then a window `blur`, and typed
+text went into the address bar). When prevented, the focus stayed in
+the page in both, so the browsers give it up too.
 
 | ova_cg_po | Page | Why |
 |---|---|---|
 | Ctrl+O, Ctrl+S, Ctrl+Shift+S | the same | a page can take them (`preventDefault`) |
-| Ctrl+E (Limits...) | the same, if the browsers give it up; else Alt+Shift+E | Chromium and Firefox use it for the search box |
-| Ctrl+N (New), Ctrl+T (Transformed form) | an Alt+Shift key, chosen in Phase 5.2 | the browsers keep them (new window, new tab) |
+| Ctrl+E (Limits...) | the same | Chromium uses it for the omnibox, but gives it up to `preventDefault` |
+| Ctrl+N (New), Ctrl+T (Transformed form) | Alt+Shift+N, Alt+Shift+T | the browsers keep them (new window, new tab) |
 | Ctrl+Q (Quit) | none | no Quit |
-| Ctrl+PgDn, Ctrl+PgUp (next, previous character) | an Alt+Shift key, chosen in Phase 5.2 | the browsers keep them (next, previous tab) |
+| Ctrl+PgDn, Ctrl+PgUp (next, previous character) | Alt+Shift+PgDn, Alt+Shift+PgUp | the browsers keep them (next, previous tab) |
+
+A key whose item is greyed is still prevented, so it never does what
+the browser would do with it instead.
 
 The menus show each item's key, so a user can find it.
 
@@ -715,9 +733,9 @@ test); the override mark `\*` never written (12 fixtures); the
 setext and thematic-break test left out of `opensBlock` (Raine,
 Fragment and the fill test).
 
-## Phase 5 The page's shell
+## Phase 5 The page's shell [done]
 
-### Phase 5.1 The look and the layout
+### Phase 5.1 The look and the layout [done]
 
 `src/index.html` and `src/style.css`: the menu bar with the
 characters' `<select>` at its right, the five tabs, the title line,
@@ -726,7 +744,11 @@ the single column at least 544 px wide. Compare by eye with ova_cg_po
 `tools/with-sway.sh` headless) and with Playwright screenshots at 640
 x 800 and at a wider size; the user judges the look.
 
-### Phase 5.2 Menus and keys
+Written (2026-11-07): `make test-browser`'s screenshots test writes
+`obj/screenshots/{chromium,firefox}-{544x700,640x800,1280x800,menu,tell}.png`
+for the user to judge; the user found the look fine (2026-11-07).
+
+### Phase 5.2 Menus and keys [done]
 
 The menus (File, Character, Rulebook) with their items greyed where
 they can do nothing; keyboard navigation of the menu bar; the keys of
@@ -734,7 +756,15 @@ they can do nothing; keyboard navigation of the menu bar; the keys of
 receive it, and does `preventDefault` keep the browser from acting?),
 with the table updated from what was seen.
 
-### Phase 5.3 Dialogs and the test harness
+Done (2026-11-07): `src/ui/menu.ts`; `test/ui/window.test.ts` ports
+`TestShortcuts` and checks the menu bar's and the tabs' keys on
+happy-dom; `shell.spec.ts` drives the menus by mouse and keyboard in
+both browsers, and presses every key of "Keys" with the real keyboard.
+Every key reached the page in both and was prevented; the table above
+has the keys chosen. Planted, failing in both browsers: a greyed item's
+key not prevented.
+
+### Phase 5.3 Dialogs and the test harness [done]
 
 `src/ui/dialogs.ts`: `tell`, `ask` (Save, Don't save, Cancel),
 `askText`, `confirm`-like Remove, the Escape stack, focus returned to
@@ -743,6 +773,28 @@ set up for `test/ui/`, with fakes for every field; a Playwright helper
 that loads a fixture into the built page through the file input.
 Find out whether happy-dom's `<dialog>` is good enough for the dialog
 tests, or whether they belong in Playwright, and record it.
+
+Done (2026-11-07). happy-dom (21.0.4) is good enough for the dialogs'
+logic, though not for what the browser does: its `<dialog>` neither
+cancels on Escape nor moves the focus in, so `dialogs.ts` moves the
+focus itself and its keydown handler takes Escape (both browsers then
+send no `cancel` of their own). `test/ui/dialogs.test.ts` checks the
+Escape stack (ova_cg_go's `TestEscape`), each dialog's default and the
+focus put back, on happy-dom. `shell.spec.ts` checks a real Escape
+and the focus in both browsers. `test/browser/page.ts`'s `openFile`
+loads a fixture, or given text, through File > Open... and the file
+chooser. Planted, failing: the focus not put back.
+
+Finding: **never compare DOM nodes with `assert.equal` or
+`deepEqual`** in `test/ui/`. On a failure node:test prints `actual`
+and `expected`, and printing a happy-dom node walks its whole window.
+That took the test run to about 20 GB, and the OOM killer stopped it
+twice (2026-11-07). Use `assert.ok(a === b, label)`. Likewise
+TypeScript narrows a variable that a callback or a key changes once an
+assert or a comparison has tested it, so the tests read such values
+through a function (`answer()`, `tab()`). And `HTMLElement.hidden` is
+`boolean | "until-found"` in TypeScript 7's DOM types, so a check
+compares it with `=== true`.
 
 ## Phase 6 Files on the page
 

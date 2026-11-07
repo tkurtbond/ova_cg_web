@@ -164,6 +164,13 @@ make clean           # rm -rf obj dist
   failure can be compared with ova_cg_go's and ova_cg_po's.
 - **Prove a new check can fail**: plant the bug it targets and watch it
   fail.
+- **Never compare DOM nodes with `assert.equal` or `deepEqual`** in
+  `test/ui/`: on a failure node:test prints both, and a happy-dom node
+  prints its whole window, about 20 GB, so the OOM killer stops the
+  run (twice, 2026-11-07). Write `assert.ok(a === b, label)`. Run a
+  planted bug's test under a memory cap, e.g.
+  `systemd-run --user --scope -q -p MemoryMax=4G -p MemorySwapMax=0`;
+  `--max-old-space-size` didn't stop it.
 
 ## Conventions
 

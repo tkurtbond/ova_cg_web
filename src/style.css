@@ -1,11 +1,291 @@
-/* The look: FLTK's default scheme, approximately (PLAN.md, "The look").
-   Filled in by Phase 5.1. */
+/* The look: FLTK's default scheme, approximately (PLAN.md, "The look"),
+   its colours taken from a screenshot of ova_cg_po: the grey #c0c0c0,
+   a raised box's light edge #f5f5f5 and dark edge #8a8a8a, white
+   entries, the selection dark blue. A system font; nothing is fetched. */
+
+:root {
+  --grey: #c0c0c0;
+  --light: #f5f5f5;
+  --dark: #8a8a8a;
+  --black: #000;
+  --entry: #fff;
+  --selection: #000080;
+  --selected-text: #fff;
+  --inactive: #8a8a8a;
+  --font: 14px system-ui, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
 
 body {
   margin: 0;
-  background: #c0c0c0;
-  color: #000;
-  font:
-    14px system-ui,
-    sans-serif;
+  background: var(--grey);
+  color: var(--black);
+  font: var(--font);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* The page: one column, at least 544 px wide, stretched across the
+   browser's width as ova_cg_po's window stretches when resized. */
+#app {
+  min-width: 544px;
+  height: 100%;
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.title-line {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- The menu bar, and the characters' select at its right ---- */
+
+.bar {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  border-top: 1px solid var(--light);
+  border-bottom: 1px solid var(--dark);
+  padding: 1px 2px;
+}
+
+.menubar {
+  display: flex;
+  flex: 1;
+}
+
+.menu {
+  position: relative;
+}
+
+.menu-top {
+  border: 1px solid transparent;
+  background: none;
+  padding: 2px 8px;
+  height: 100%;
+}
+
+.menu-top.open,
+.menu-top:focus-visible {
+  border-color: var(--light) var(--dark) var(--dark) var(--light);
+  outline: none;
+}
+
+.menu-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  min-width: 14em;
+  padding: 2px;
+  background: var(--grey);
+  border: 1px solid;
+  border-color: var(--light) var(--black) var(--black) var(--light);
+  box-shadow: inset -1px -1px var(--dark);
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-popup[hidden] {
+  display: none;
+}
+
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 2em;
+  border: none;
+  background: none;
+  padding: 3px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.menu-item:focus {
+  background: var(--selection);
+  color: var(--selected-text);
+  outline: none;
+}
+
+.menu-item:disabled {
+  color: var(--inactive);
+}
+
+.menu-separator {
+  border-top: 1px solid var(--dark);
+  border-bottom: 1px solid var(--light);
+  margin: 2px 0;
+}
+
+.characters {
+  width: 230px; /* ova_cg_go's CharacterW */
+  flex: none;
+}
+
+/* ---- Entries and buttons ---- */
+
+input[type="text"],
+input:not([type]),
+textarea,
+select {
+  background: var(--entry);
+  border: 1px solid;
+  border-color: var(--dark) var(--light) var(--light) var(--dark);
+  box-shadow: inset 1px 1px var(--black);
+  border-radius: 0;
+  padding: 1px 3px;
+}
+
+button:not(.menu-top, .menu-item, .tab) {
+  background: var(--grey);
+  border: 1px solid;
+  border-color: var(--light) var(--black) var(--black) var(--light);
+  box-shadow: inset -1px -1px var(--dark);
+  border-radius: 0;
+  padding: 3px 14px;
+  min-width: 6em;
+}
+
+button:not(.menu-top, .menu-item, .tab):active {
+  border-color: var(--black) var(--light) var(--light) var(--black);
+  box-shadow: inset 1px 1px var(--dark);
+}
+
+button:disabled {
+  color: var(--inactive);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 1px dotted var(--black);
+  outline-offset: -4px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 0;
+}
+
+/* ---- The tabs ---- */
+
+.tabs {
+  display: flex;
+  padding: 4px 4px 0;
+  gap: 1px;
+}
+
+.tab {
+  background: var(--grey);
+  border: 1px solid;
+  border-color: var(--light) var(--dark) transparent var(--light);
+  padding: 2px 6px;
+  position: relative;
+  top: 1px;
+  color: var(--black);
+}
+
+.tab[aria-selected="true"] {
+  border-color: var(--light) var(--black) transparent var(--light);
+  padding-bottom: 3px;
+  margin-top: -2px;
+  z-index: 1;
+}
+
+.tab[aria-selected="false"] {
+  background: #acacac;
+}
+
+.tab:focus-visible {
+  outline: 1px dotted var(--black);
+  outline-offset: -3px;
+}
+
+.panels {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 0 4px 4px;
+  border: 1px solid;
+  border-color: var(--light) var(--black) var(--black) var(--light);
+  min-height: 0;
+}
+
+.panel {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 12px;
+}
+
+.panel[hidden] {
+  display: none;
+}
+
+/* ---- Dialogs ---- */
+
+.dialog {
+  background: var(--grey);
+  color: var(--black);
+  border: 1px solid;
+  border-color: var(--light) var(--black) var(--black) var(--light);
+  padding: 0;
+  min-width: 320px;
+  max-width: min(700px, 90vw);
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0.2);
+}
+
+.dialog-title {
+  background: var(--selection);
+  color: var(--selected-text);
+  padding: 3px 8px;
+}
+
+.dialog-body {
+  padding: 12px 14px 4px;
+}
+
+.dialog-text {
+  margin: 0;
+  white-space: pre-wrap;
+  display: block;
+}
+
+.dialog-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 6px;
+  min-width: 40ch;
+}
+
+.dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px 12px;
+}
+
+button.default {
+  outline: 1px solid var(--black);
 }
