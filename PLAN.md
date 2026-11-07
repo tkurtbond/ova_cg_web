@@ -519,7 +519,7 @@ Done (2026-11-07):
   check of its own, not in ova_cg_go's: such an attack isn't warned
   of. The planted bug fails it.
 
-## Phase 3 Files
+## Phase 3 Files [done]
 
 ### Phase 3.1 entities [done]
 
@@ -660,12 +660,22 @@ outputs. Planted bugs, each failing a check: no timestamps in
 doubled in single quotes. Without `lineWidth: 0` nothing fails: no
 real list is long enough (above).
 
-### Phase 3.5 The round trip through ova_fmt_po
+### Phase 3.5 The round trip through ova_fmt_po [done]
 
 `test/files.sh`, ova_cg_go's adapted to read this repo's `obj/files/`:
 every saved copy formats as its fixture does in all seven ova_fmt_po
 formats and with `-O`, with the override mark taken out for the
 fixtures that load with notices.
+
+Done (2026-11-07): ova_cg_go's script, reading this repo's
+`obj/files/`; `make test` runs it after the unit tests that write
+them. Its Markdown checks (each `obj/files/NAME.md` and
+`NAME.inline.md` against ova_fmt_po `-M` and `-i` of the saved copy)
+are skipped, saying so, until Phase 4's tests write any `.md`; from
+then on a missing one fails. All 432 checks pass: 54 fixtures, each in
+eight formats. Planted in a saved copy, each failing it: a level
+changed; `overrides: [health]` added where the fixture has none
+(ova_fmt_po marks the number).
 
 ## Phase 4 Markdown
 
