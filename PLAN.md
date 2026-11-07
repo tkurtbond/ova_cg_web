@@ -240,7 +240,11 @@ Comments in a loaded file are not kept, as in ova_cg_po and ova_cg_go.
 formatters, writing to an array of strings joined at the end. The
 minus sign is U+2212; the inline paragraph fills to 70 columns
 counting code points (`[...s].length`). `save` (a file) is gone: the
-Markdown tab downloads.
+Markdown tab downloads. As built, `markdown.ts` exports `sheet` and
+`entity`, and `inline.ts` `inline` and `inlineEntity`; the pieces the
+two Go files share are `markdown.parts`. Where Go's `Sheet` and
+`Inline` return "" for a character that can't be read back,
+`save.toEntity` throws: a programmer's error (AGENTS.md).
 
 ### paths
 
@@ -677,21 +681,39 @@ eight formats. Planted in a saved copy, each failing it: a level
 changed; `overrides: [health]` added where the fixture has none
 (ova_fmt_po marks the number).
 
-## Phase 4 Markdown
+## Phase 4 Markdown [done]
 
-### Phase 4.1 The sheet
+### Phase 4.1 The sheet [done]
 
 `src/core/markdown.ts` from `internal/markdown/markdown.go`;
 `markdown.test.ts`: each fixture's sheet written to
 `obj/files/NAME.md` and equal to `test/golden/NAME.md`; `files.sh`
 compares each with `ova_fmt_po -M` of the saved copy.
 
-### Phase 4.2 The inline paragraph
+### Phase 4.2 The inline paragraph [done]
 
 `src/core/inline.ts` from `inline.go`: `obj/files/NAME.inline.md`
 equal to the golden file and to `ova_fmt_po -i`; the round trip of
 `-i` as `files.sh` does it in ova_cg_go. Check the fill's column count
 with a fixture holding non-ASCII text.
+
+Done (2026-11-07), 4.1 and 4.2 together, as the Go has them in one
+package: `test/core/markdown.test.ts` ports `TestFixtures` (its 55
+fixtures, each sheet and inline file equal to the golden one, byte for
+byte); `TestSave` has nothing to check, since nothing is written to a
+path. `files.sh`'s Markdown checks now run: 542 pass (54 fixtures in
+eight formats, and 55 sheets and inline files against ova_fmt_po `-M`
+and `-i`). Finding: no fixture can check the fill's column count. Its
+non-ASCII characters (−, — and …) are each one UTF-16
+unit, so a fill by `s.length` passes every fixture; only text outside
+the Basic Multilingual Plane tells the two apart, and changing a
+fixture starts in the Ada ova_fmt. So `TestFillCountsCharacters`
+checks the fill directly, with "😀" beside "é" and "−", and
+`TestFillKeepsBlocksOff` checks `opensBlock` and the words it keeps
+together. Planted, each failing: the fill counting `length` (the fill
+test); the override mark `\*` never written (12 fixtures); the
+setext and thematic-break test left out of `opensBlock` (Raine,
+Fragment and the fill test).
 
 ## Phase 5 The page's shell
 
