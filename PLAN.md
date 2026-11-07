@@ -370,7 +370,7 @@ Done (2026-11-07): the 57 fixtures (the same as ova_cg_po's
 before copying, so the files are fresh: 169 of them (59 names, the 57
 fixtures and two of the save tests' own) from ova_cg_go `e31a351`.
 
-## Phase 1 rules
+## Phase 1 rules [done]
 
 `src/core/rules.ts` from `internal/rules/rules.go`;
 `test/core/rules.test.ts` from `rules_test.go` (every Quick List entry,
@@ -378,6 +378,37 @@ of its kind, in order, at its cost; the labels; the small tables; the
 Boss Abilities; `offered`). `tools/listrules.ts` and `make
 check-pages`, compared with ova_cg_go's `cmd/listrules` output, which
 must be identical.
+
+Done (2026-11-07):
+
+- **Go's constants keep their names.** `Kind`, `Flag`, `Link` and
+  `CostKind` are plain exported constants (`rules.Ability`,
+  `rules.RollEach`, `rules.Spells`, `rules.RangeCost`), with numeric
+  literal union types for `Kind`, `Link` and `CostKind`, so a reader
+  finds `rules.Ability` where Go has `rules.Ability`. `rules.kinds`
+  stands in for Go's `for k := Ability; k <= Flaw; k++`.
+- **Items and flags.** `Item` is a frozen class with `has(f)`. Go's
+  nil-safe `(*Item).Has` becomes the free function
+  `rules.has(it | undefined, f)`, and `Flags.Has` becomes
+  `hasFlag(s, f)`.
+- **Panics become `RangeError`s**: `get`, `getBoss`, `offered` and the
+  small tables throw out of range rather than give `undefined` or
+  `NaN`. The tables also refuse a level that isn't an integer. A
+  seventh check, "tables out of range", tests this; ova_cg_go needs no
+  such check, since Go panics on its own.
+- **Ported checks.** The six checks of `rules_test.go` keep their
+  labels. Their Quick List rows were converted from the Go file by a
+  sed script, not retyped.
+- **Compared with ova_cg_go, three ways:**
+  - `tools/listrules.ts` prints exactly what ova_cg_go's
+    `cmd/listrules` prints (173 lines, compared with `cmp`).
+  - The 179 table lines (items, aliases, Boss Abilities) are identical
+    to `rules.go`'s once leading space, `;` and comments are stripped.
+  - `make check-pages` reports all 173 pages matching the rulebook's
+    headings.
+- **The checks can fail.** Four planted bugs failed 6 of the 17 tests:
+  Ammunition at most twice, Short-Tempered on p. 78, Tough +5 as 50,
+  and the aliases ignored.
 
 ## Phase 2 calc
 
