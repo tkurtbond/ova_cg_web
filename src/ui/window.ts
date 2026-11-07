@@ -22,12 +22,27 @@
 // save changes (mayLeave), and closing the tab with changes gets the
 // browser's own question (beforeunload).
 //
-// The tabs are empty until Phase 7, and a menu item whose phase hasn't
-// come has no action and stays disabled (PLAN.md, "Build order").
+// The Character tab is the names, the Abilities and Weaknesses, the
+// chosen Ability's END and Perks and Flaws, the totals, the warnings and
+// the combat notes; the Attacks tab the attacks, each a row with its
+// ROLL, DX and END, and the sheet's numbers under them. Every number
+// shown is a NumberBox on a calc.Number: computed, with its override
+// beside it. A change goes into the character, which is computed again
+// (changed), and the numbers shown again.
+//
+// The Background, Fluff and Markdown tabs are empty until their phases,
+// and a menu item whose phase hasn't come has no action and stays
+// disabled (PLAN.md, "Build order").
 
+import * as calc from "../core/calc.ts";
 import * as character from "../core/character.ts";
+import * as entities from "../core/entities.ts";
+import * as rules from "../core/rules.ts";
 import * as save from "../core/save.ts";
+import { AttackDialog } from "./attack.ts";
 import * as dialogs from "./dialogs.ts";
+import { TraitPanel } from "./traitpanel.ts";
+import { bold, el, Lines, NumberBox, notANumber } from "./widgets.ts";
 import { keyMatches, MenuBar, MenuItem, Separator, type Key } from "./menu.ts";
 
 export const Title = dialogs.Title;
@@ -36,6 +51,126 @@ export const { SaveFirst, Discard, Cancel } = dialogs;
 
 /** The characters' <select>'s width, ova_cg_go's CharacterW. */
 export const CharacterW = 230;
+
+/** The sheet's numbers, Window.numbers' indices. */
+export const Defense = 0;
+export const Barrier = 1;
+export const Health = 2;
+export const Endurance = 3;
+export const Reserve = 4;
+export const TV = 5;
+export const AbilityLevels = 6;
+export const WeaknessLevels = 7;
+export const Total = 8;
+export const Points = 9;
+export const Incorporeal = 10;
+export const AbilityPoints = 11;
+export const NSheetNumbers = 12;
+
+/** AttackRow is one attack's row on the Attacks tab. */
+export interface AttackRow {
+  attack: character.Attack;
+  element: HTMLElement;
+  name: HTMLElement;
+  roll: NumberBox;
+  dx: NumberBox;
+  end: NumberBox;
+  edit: HTMLButtonElement;
+  remove: HTMLButtonElement;
+}
+
+/** warningText is wn as the Warnings list says it. */
+export function warningText(wn: calc.Warning): string {
+  let r = "";
+  if (wn.attack !== undefined) r = character.attackOf(wn.attack).name + ": ";
+  if (wn.trait !== undefined) {
+    const t = character.traitOf(wn.trait);
+    r += rules.nameLabel(t.item, t.name);
+  }
+  if (wn.mod !== undefined) {
+    const m = character.modOf(wn.mod);
+    if (wn.trait !== undefined) r += ": ";
+    r += rules.nameLabel(m.item, m.name);
+  }
+  switch (wn.code) {
+    case calc.UnknownItem:
+      r += " isn't in the rulebook's lists";
+      break;
+    case calc.LevelRange:
+      if (wn.trait!.kind === rules.Ability) {
+        r += ": an Ability is +1 to +5 (p. 18)";
+      } else {
+        r += ": a Weakness is -1 to -3 (p. 18)";
+      }
+      break;
+    case calc.TooOften:
+      r += " is taken more often than it may be (p. 83)";
+      break;
+    case calc.CostRange:
+      r += "'s cost is outside its range, or not in steps of 5 (p. 87)";
+      break;
+    case calc.NoDamageIneffective:
+      r += "No Damage with Ineffective (p. 88)";
+      break;
+    case calc.RedirectableAlone:
+      r += "Redirectable without Ranged (p. 86)";
+      break;
+    case calc.SpellRange:
+      r +=
+        ": a spell's level isn't 1 to 5 (or -1 to -3, a Weakness), or its Magic's isn't 1 to 5: no cost (p. 58)";
+      break;
+    case calc.TableRange:
+      r += "Tough, Vigorous or Endurance Reserve past +5, counted as +5";
+      break;
+    case calc.BaseZeroBroken:
+      r += "The Character Total is beyond Base Zero's range (p. 21)";
+      break;
+    case calc.StartingBroken:
+      r +=
+        "The Abilities are beyond the starting levels and the Weaknesses (p. 21)";
+      break;
+    case calc.CeilingBroken:
+      r += "The Abilities are beyond the Power Ceiling (p. 21)";
+      break;
+    case calc.OverFive:
+      if (wn.attack === undefined) r += "DEFENSE: ";
+      r += "Abilities give the roll more than +5 (p. 21)";
+      break;
+    case calc.NotBoss:
+      r += ": only a Boss has Boss Abilities (p. 123)";
+      break;
+  }
+  return r;
+}
+
+/** linkedLabel is the linked content's button's label. */
+export function linkedLabel(l: rules.Link): string {
+  switch (l) {
+    case rules.Spells:
+      return "Spells...";
+    case rules.Form:
+      return "Form...";
+    case rules.Partner:
+      return "Companion...";
+    case rules.Machine:
+      return "Vehicle...";
+  }
+  return "Linked...";
+}
+
+/** npcTypeLabels is the NPC Type's choices: none, then each type. */
+export function npcTypeLabels(): string[] {
+  const l = ["none"];
+  for (let k = entities.Heroic; k <= entities.Boss; k++) {
+    l.push(
+      rules.pageLabel(
+        entities.npcTypeName(k as entities.NpcType),
+        rules.NpcTypesPage,
+      ),
+    );
+  }
+  return l;
+}
 
 /** The tabs, in order. */
 export const tabNames = [
@@ -94,6 +229,32 @@ export class Window {
   /** The tabs' buttons and panels, in tabNames' order. */
   readonly tabs: HTMLButtonElement[] = [];
   readonly panels: HTMLElement[] = [];
+
+  readonly nameIn: HTMLInputElement;
+  readonly playerIn: HTMLInputElement;
+  readonly taglineIn: HTMLInputElement;
+  /**
+   * The NPC type: option 0 none, then entities.Heroic, Secondary, Extra,
+   * Boss, each at its constant + 1.
+   */
+  readonly npcTypeIn: HTMLSelectElement;
+  readonly abilities: TraitPanel;
+  readonly weaknesses: TraitPanel;
+  /** The chosen Ability's END */
+  readonly abilityEnd: NumberBox;
+  /** Its Perks and Flaws */
+  readonly abilityMods: HTMLButtonElement;
+  /** Its linked content: "Spells...", "Form...", ... */
+  readonly abilityLinked: HTMLButtonElement;
+  readonly numbers: NumberBox[] = [];
+  readonly warnings: Lines;
+  readonly combatNotes: HTMLTextAreaElement;
+  /** The Attacks tab's rows, in order */
+  rows: AttackRow[] = [];
+  private readonly rowBox: HTMLElement;
+  readonly addAttack: HTMLButtonElement;
+  /** The attack dialog; undefined when closed */
+  attack: AttackDialog | undefined = undefined;
 
   /**
    * The file's characters, in order, and the one shown,
@@ -233,6 +394,141 @@ export class Window {
     });
 
     app.replaceChildren(this.titleLine, bar, tablist, panels);
+
+    // ---- The Character and Attacks tabs (Go's buildSheetTabs) ----
+    const openPage = (page: number): void => this.openPage(page);
+    const tell = (text: string): void => this.tell(text);
+    this.nameIn = this.textEntry("Character Name", (s) => {
+      this.character.name = entities.trim(s);
+      this.showCharacters();
+    });
+    this.playerIn = this.textEntry("Player Name", (s) => {
+      this.character.player = character.setText(entities.trim(s));
+    });
+    this.taglineIn = this.textEntry("Tagline", (s) => {
+      this.character.tagline = character.setText(entities.trim(s));
+    });
+    this.combatNotes = el(doc, "textarea", "combat-notes");
+    this.combatNotes.setAttribute("aria-label", "Combat Notes");
+    this.combatNotes.addEventListener("input", () => {
+      if (this.filling) return;
+      this.character.combatNotes = character.setText(this.combatNotes.value);
+      this.textChanged();
+    });
+    this.abilities = new TraitPanel(
+      doc,
+      rules.Ability,
+      "Abilities",
+      120,
+      openPage,
+      tell,
+    );
+    this.abilities.changed = () => this.changed();
+    this.abilities.onSelect = (t) => this.showAbility(t);
+    this.weaknesses = new TraitPanel(
+      doc,
+      rules.Weakness,
+      "Weaknesses",
+      120,
+      openPage,
+      tell,
+    );
+    this.weaknesses.changed = () => this.changed();
+    this.abilityMods = d.button("Perks and Flaws...", () => this.editMods());
+    this.abilityLinked = d.button("Linked...", () => {}); // Phase 9
+    this.abilityEnd = new NumberBox(doc, "END", false);
+    this.abilityEnd.changed = (b, ok) => this.numberChanged(b, ok);
+    this.warnings = new Lines(doc, "Warnings", 65);
+    this.rowBox = el(doc, "div", "attack-rows");
+    this.addAttack = d.button("Add attack...", () => this.newAttack());
+    this.npcTypeIn = el(doc, "select", "npc-type");
+    this.npcTypeIn.id = "npc-type";
+    for (const l of npcTypeLabels()) {
+      this.npcTypeIn.append(el(doc, "option", undefined, l));
+    }
+    this.npcTypeIn.addEventListener("change", () => this.npcTypeChosen());
+
+    const field = (label: string, input: HTMLElement): HTMLElement => {
+      const l = el(doc, "label", undefined, label);
+      l.htmlFor = input.id;
+      return l;
+    };
+    const names = el(doc, "div", "names");
+    const pair = (input: HTMLElement, label: string, right: HTMLElement) => {
+      const r = el(doc, "div", "name-row");
+      r.append(input, field(label, right), right);
+      return r;
+    };
+    names.append(
+      field("Character Name", this.nameIn),
+      pair(this.nameIn, "Player Name", this.playerIn),
+      field("Tagline", this.taglineIn),
+      pair(this.taglineIn, "NPC Type", this.npcTypeIn),
+    );
+    const traits = el(doc, "div", "columns traits");
+    traits.append(this.abilities.element, this.weaknesses.element);
+    const ability = el(doc, "div", "row ability");
+    ability.append(
+      this.abilityMods,
+      this.abilityEnd.element,
+      el(doc, "span", "spacer"),
+      this.abilityLinked,
+    );
+    const totals = el(doc, "div", "row totals");
+    totals.append(
+      this.sheetBox(AbilityLevels, "Abilities"),
+      this.sheetBox(WeaknessLevels, "Weaknesses"),
+      this.sheetBox(Total, "Character Total"),
+      this.sheetBox(AbilityPoints, "Ability points"),
+      this.sheetBox(Points, "Scaled Cost points"),
+    );
+    const notes = bold(doc, "Combat Notes");
+    this.panels[0]!.append(
+      names,
+      traits,
+      ability,
+      totals,
+      bold(doc, "Warnings"),
+      this.warnings.element,
+      notes,
+      this.combatNotes,
+    );
+
+    const header = el(doc, "div", "attack-row attack-header");
+    header.setAttribute("aria-hidden", "true"); // each box names itself
+    header.append(
+      el(doc, "span", "attack-name", "Name"),
+      el(doc, "span", "attack-number", "ROLL"),
+      el(doc, "span", "attack-number", "DX"),
+      el(doc, "span", "attack-number", "END"),
+      el(doc, "span", "attack-buttons"),
+    );
+    // Incorporeal Form's Defense under Barrier's: each is shown only
+    // when the character has it.
+    const alternates = el(doc, "div", "alternates");
+    alternates.append(
+      this.sheetBox(Barrier, "Barrier DEFENSE"),
+      this.sheetBox(Incorporeal, "Incorporeal DEFENSE"),
+    );
+    const sheetNumbers = el(doc, "div", "row sheet-numbers");
+    sheetNumbers.append(
+      this.sheetBox(Defense, "DEFENSE"),
+      alternates,
+      this.sheetBox(Health, "HEALTH"),
+      this.sheetBox(Endurance, "ENDURANCE"),
+      this.sheetBox(Reserve, "Reserve"),
+      this.sheetBox(TV, "TV"),
+    );
+    const add = el(doc, "div", "row");
+    add.append(this.addAttack);
+    this.panels[1]!.append(
+      bold(doc, "Attacks"),
+      header,
+      this.rowBox,
+      add,
+      sheetNumbers,
+    );
+
     doc.addEventListener("keydown", (e) => this.key(e));
     doc.addEventListener("dragover", (e) => this.dragOver(e));
     doc.addEventListener("drop", (e) => this.drop(e));
@@ -356,9 +652,265 @@ export class Window {
 
   /** showAll shows the character again, everywhere. */
   showAll(): void {
+    const c = this.character;
+    this.filling = true;
+    this.nameIn.value = c.name;
+    this.playerIn.value = c.player ?? "";
+    this.taglineIn.value = c.tagline ?? "";
+    this.combatNotes.value = c.combatNotes ?? "";
+    this.showNpcType();
+    this.filling = false;
+    this.pointNumbers();
+    this.abilities.show(c, undefined, c);
+    this.weaknesses.show(c, undefined, c);
+    this.showTransformed();
+    this.showRows();
     this.showCharacters();
     this.showTitle();
   }
+
+  /**
+   * textEntry is a line of text named label, set calls when the user
+   * changes it.
+   */
+  private textEntry(label: string, set: (s: string) => void): HTMLInputElement {
+    const e = el(this.doc, "input");
+    e.type = "text";
+    e.id = label.toLowerCase().replaceAll(" ", "-");
+    e.addEventListener("input", () => {
+      if (this.filling) return;
+      set(e.value);
+      this.textChanged();
+    });
+    return e;
+  }
+
+  // ---- The sheet's numbers ----
+
+  private showWarnings(): void {
+    this.warnings.set(
+      this.character.warnings.map((wn) => [warningText(wn)]),
+      -1,
+    );
+  }
+
+  /** pointNumbers points the sheet's number boxes at the character's numbers. */
+  private pointNumbers(): void {
+    const c = this.character;
+    [
+      c.defense,
+      c.barrier,
+      c.health,
+      c.endurance,
+      c.reserve,
+      c.tv,
+      c.abilityLevels,
+      c.weaknessLevels,
+      c.total,
+      c.points,
+      c.incorporeal,
+      c.abilityPoints,
+    ].forEach((n, i) => {
+      this.numbers[i]!.target = n;
+    });
+  }
+
+  /**
+   * showNumbers shows every number box again: Barrier's, Incorporeal
+   * Form's and the Reserve's only when the character has them, Scaled
+   * Cost's points (the Abilities' and the net) only under it. A total a
+   * limit finds too high is red (p. 21): Base Zero's the Character
+   * Total, or the net points under Scaled Cost; a Power Ceiling's or the
+   * starting levels' the Abilities' levels, or their points under Scaled
+   * Cost.
+   */
+  showNumbers(): void {
+    const c = this.character;
+    for (const b of this.numbers) b.display();
+    const baseZero = c.warned(calc.BaseZeroBroken);
+    const spent = c.warned(calc.CeilingBroken) || c.warned(calc.StartingBroken);
+    const scaled = c.options.scaledCost;
+    const n = this.numbers;
+    n[Total]!.setRed(baseZero && !scaled);
+    n[Points]!.setRed(baseZero && scaled);
+    n[AbilityLevels]!.setRed(spent && !scaled);
+    n[AbilityPoints]!.setRed(spent && scaled);
+    const visible = (on: boolean, b: NumberBox): void => {
+      if (on) b.show();
+      else b.hide();
+    };
+    visible(c.hasBarrier, n[Barrier]!);
+    visible(c.hasIncorporeal, n[Incorporeal]!);
+    visible(c.hasReserve, n[Reserve]!);
+    visible(scaled, n[AbilityPoints]!);
+    visible(scaled, n[Points]!);
+    for (const r of this.rows) {
+      r.roll.display();
+      r.dx.display();
+      r.end.display();
+    }
+    this.abilityEnd.display();
+    this.showWarnings();
+  }
+
+  /** changed follows any change to the character: computed again and shown. */
+  changed(): void {
+    character.recompute(this.character);
+    this.modified = true;
+    this.showTitle();
+    this.showNumbers();
+  }
+
+  /** textChanged follows a change of text alone: nothing to compute. */
+  textChanged(): void {
+    this.modified = true;
+    this.showTitle();
+  }
+
+  /** numberChanged follows a number box's text taken; refused text is said so. */
+  private numberChanged(b: NumberBox, ok: boolean): void {
+    if (!ok) this.tell(notANumber(b));
+    this.changed();
+  }
+
+  private sheetBox(which: number, label: string): HTMLElement {
+    const b = new NumberBox(this.doc, label, true);
+    b.changed = (b, ok) => this.numberChanged(b, ok);
+    this.numbers[which] = b;
+    return b.element;
+  }
+
+  // ---- Abilities and Weaknesses ----
+
+  /**
+   * showAbility shows the selected Ability's END, Perks and Flaws, and
+   * linked content: the box and buttons work only for one with them.
+   */
+  private showAbility(t: character.Trait | undefined): void {
+    let linked: rules.Link = rules.NoLink;
+    if (t === undefined) {
+      this.abilityEnd.target = undefined;
+      this.abilityEnd.disable();
+      this.abilityMods.disabled = true;
+    } else {
+      this.abilityEnd.target = t.end;
+      if (t.hasEnd) this.abilityEnd.enable();
+      else this.abilityEnd.disable();
+      this.abilityMods.disabled = false;
+      if (t.item !== undefined) linked = t.item.linked;
+    }
+    this.abilityLinked.textContent = linkedLabel(linked);
+    // Phase 9 gives it its dialog: until then it stays off.
+    this.abilityLinked.disabled = true;
+    this.abilityEnd.display();
+  }
+
+  private editMods(): void {
+    const t = this.abilities.selectedTrait();
+    if (t === undefined || this.attack !== undefined) return;
+    AttackDialog.editMods(this, this.character, t, (changed) => {
+      if (changed) this.changed();
+      this.abilities.refresh(this.abilities.selected());
+    });
+  }
+
+  // ---- The attacks ----
+
+  private attackDone(changed: boolean): void {
+    if (changed) this.changed();
+    this.showRows();
+  }
+
+  /** newAttack is Add attack... (Go's addAttack). */
+  newAttack(): void {
+    if (this.attack !== undefined) return;
+    const a = character.newAttack("New attack");
+    this.character.attacks.push(a);
+    character.recompute(this.character);
+    AttackDialog.editAttack(this, this.character, a, true, (ch) =>
+      this.attackDone(ch),
+    );
+  }
+
+  private attackBox(n: calc.Number, label: string, name: string): NumberBox {
+    const b = new NumberBox(this.doc, "", false, name + " " + label);
+    b.label = label;
+    b.target = n;
+    b.changed = (b, ok) => this.numberChanged(b, ok);
+    return b;
+  }
+
+  /** showRows makes the Attacks tab's rows again, one for each attack. */
+  showRows(): void {
+    const doc = this.doc;
+    this.rows = this.character.attacks.map((x) => {
+      const a = character.attackOf(x);
+      const name = el(doc, "span", "attack-name", a.name);
+      name.title = a.name; // the whole name, where it is cut short
+      const r: AttackRow = {
+        attack: a,
+        element: el(doc, "div", "attack-row"),
+        name,
+        roll: this.attackBox(a.roll, "ROLL", a.name),
+        dx: this.attackBox(a.dx, "DX", a.name),
+        end: this.attackBox(a.end, "END", a.name),
+        edit: this.dialogs.button("Edit", () => {
+          if (this.attack === undefined) {
+            AttackDialog.editAttack(this, this.character, a, false, (ch) =>
+              this.attackDone(ch),
+            );
+          }
+        }),
+        remove: this.dialogs.button("Remove", () => {
+          character.removeAttack(this.character, a);
+          this.changed();
+          this.showRows();
+        }),
+      };
+      r.dx.allowHalf = true;
+      r.edit.setAttribute("aria-label", "Edit " + a.name);
+      r.remove.setAttribute("aria-label", "Remove " + a.name);
+      const buttons = el(doc, "span", "attack-buttons");
+      buttons.append(r.edit, r.remove);
+      r.element.append(
+        name,
+        r.roll.element,
+        r.dx.element,
+        r.end.element,
+        buttons,
+      );
+      return r;
+    });
+    this.rowBox.replaceChildren(...this.rows.map((r) => r.element));
+    this.showNumbers();
+  }
+
+  // ---- The NPC type ----
+
+  /**
+   * npcTypeChosen follows the NPC type chosen: the sheet's kind, so its
+   * Health, Endurance and TV, follow it (p. 123-124).
+   */
+  private npcTypeChosen(): void {
+    if (this.filling) return;
+    const i = this.npcTypeIn.selectedIndex;
+    character.setNpcType(
+      this.character,
+      i <= 0 ? undefined : ((i - 1) as entities.NpcType),
+    );
+    this.changed();
+    this.abilities.refresh(this.abilities.selected()); // a Boss's offer the Boss Abilities too
+  }
+
+  private showNpcType(): void {
+    const k = this.character.npcType;
+    this.npcTypeIn.selectedIndex = k === undefined ? 0 : k + 1;
+  }
+
+  // ---- The transformed form ----
+
+  /** showTransformed: Phase 9's menu item's check. */
+  private showTransformed(): void {}
 
   // ---- Files ----
 

@@ -20,17 +20,15 @@ async function opened(page: Page): Promise<ReturnType<typeof watch>> {
   return w;
 }
 
-/** changed marks the characters changed, as Phase 7's fields will. */
+/**
+ * changed changes the character as the user does, leaving it as it was:
+ * its name typed over, then put back, so a save is still the golden file.
+ */
 async function changed(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const w = (
-      globalThis as unknown as {
-        ova: { modified: boolean; showTitle(): void };
-      }
-    ).ova;
-    w.modified = true;
-    w.showTitle();
-  });
+  const name = page.getByRole("textbox", { name: "Character Name" });
+  const was = await name.inputValue();
+  await name.fill(was + "x");
+  await name.fill(was);
 }
 
 async function menu(page: Page, item: RegExp): Promise<void> {

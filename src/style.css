@@ -289,3 +289,257 @@ textarea:focus-visible {
 button.default {
   outline: 1px solid var(--black);
 }
+
+.dialog.attack-dialog {
+  width: min(760px, 95vw); /* ova_cg_go's attack dialog is 760 wide */
+  max-width: 95vw;
+}
+
+/* ---- The sheet: rows, columns and headings ---- */
+
+.heading {
+  font-weight: bold;
+  margin: 8px 0 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+  flex-wrap: wrap;
+}
+
+.row.numbers,
+.row.totals,
+.row.sheet-numbers {
+  align-items: flex-start;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* A label before each entry, as Fyne's form layout. */
+.form,
+.names {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: center;
+}
+
+.name-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.name-row > input:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.name-row > :last-child {
+  width: 160px;
+  box-sizing: border-box;
+  flex: none;
+}
+
+.checks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+textarea.combat-notes,
+textarea.description {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+}
+
+textarea.combat-notes {
+  height: 80px;
+}
+
+textarea.description {
+  height: 60px;
+}
+
+/* ---- Lists of lines ---- */
+
+.lines {
+  background: var(--entry);
+  border: 1px solid;
+  border-color: var(--dark) var(--light) var(--light) var(--dark);
+  box-shadow: inset 1px 1px var(--black);
+  overflow-y: auto;
+  min-height: 3em;
+}
+
+.lines:focus-visible {
+  outline: 1px dotted var(--black);
+}
+
+.line {
+  display: flex;
+  gap: 6px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.line[aria-selected="true"] {
+  background: var(--selection);
+  color: var(--selected-text);
+}
+
+.line-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.line-column {
+  flex: none;
+  text-align: right;
+}
+
+.line-column[hidden] {
+  display: none;
+}
+
+/* ---- A list's editor ---- */
+
+.panel-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.panel-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.panel-row > select,
+.panel-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.panel-label {
+  display: contents;
+}
+
+.panel-buttons button:not(.menu-top, .menu-item, .tab) {
+  min-width: 0;
+  padding: 3px 8px;
+}
+
+button.help:not(.menu-top, .menu-item, .tab) {
+  min-width: 0;
+  padding: 1px 8px;
+}
+
+input.spinner {
+  width: 4em;
+}
+
+/* ---- Numbers: computed, and the override beside ---- */
+
+.number-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.number-box.above {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.number-box[hidden] {
+  display: none;
+}
+
+.number-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.number-shown {
+  display: inline-block;
+  min-width: 3.5ch;
+  text-align: right;
+  padding: 1px 3px;
+}
+
+.number-shown.red {
+  color: #c00000;
+  font-weight: bold;
+}
+
+input.number-override {
+  width: 5ch;
+}
+
+.alternates {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- The attacks ---- */
+
+.attack-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+}
+
+.attack-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attack-row > .number-box,
+.attack-number {
+  width: 11ch;
+  flex: none;
+}
+
+.attack-buttons {
+  display: flex;
+  gap: 4px;
+  width: 15em;
+  flex: none;
+  justify-content: flex-end;
+}
+
+.attack-buttons button:not(.menu-top, .menu-item, .tab) {
+  min-width: 0;
+  padding: 3px 8px;
+}

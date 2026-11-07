@@ -853,9 +853,9 @@ chosen, but the page reads the file after that. A change marked at once
 was then cleared by the load, and the test failed only under the full
 run's load. `files.spec.ts`'s `opens` waits for the title first.
 
-## Phase 7 The Character and Attacks tabs
+## Phase 7 The Character and Attacks tabs [done]
 
-### Phase 7.1 The Character tab
+### Phase 7.1 The Character tab [done]
 
 The names, the tagline and NPC Type (each type with its page); the
 Abilities' and Weaknesses' panels (list, name menu with pages, level,
@@ -863,12 +863,12 @@ detail, Add, Change, Remove, ?); the selected Ability's END and its
 **Perks and Flaws...** button; the totals and warnings; Combat Notes.
 `test/ui/window.test.ts` ports `window_test.go`'s checks for these.
 
-### Phase 7.2 The Attacks tab and the attack dialog
+### Phase 7.2 The Attacks tab and the attack dialog [done]
 
 The combat box and its numbers, the attack rows (add, remove, edit),
 the attack dialog with its Perks and Flaws, END and DX.
 
-### Phase 7.3 Overrides
+### Phase 7.3 Overrides [done]
 
 Every computed number's `NumberBox`: the computed text beside the box,
 an override used by everything computed from it, `1/2` and `10+`
@@ -876,6 +876,54 @@ where allowed, anything else refused with a message, emptying the box
 to go back; a file's numbers that differ from the rules' kept as
 overrides and said on opening. The Incorporeal DEFENSE box shown only
 with Incorporeal Form.
+
+### Phase 7: decisions and findings
+
+- The checks are in `test/ui/sheet.test.ts`, not `window.test.ts`
+  (Phase 5's shell has that name). Its first test ports Go's
+  `TestWindow` with Go's labels. The second checks that showing a
+  character is no change. `test/browser/sheet.spec.ts` covers what
+  happy-dom can't, in Chromium and Firefox:
+  - Enter, and leaving the box;
+  - the `<select>`'s placeholder;
+  - the list's keys;
+  - the attack dialog's OK, Cancel and Escape.
+- A Panel's name `<select>` starts on a disabled, hidden placeholder
+  option, "(choose a name)", as Fyne's Select shows nothing chosen.
+  So `choiceIndex()` is `selectedIndex - 1`.
+- `NumberBox` takes its text on `change` (leaving the box changed) and
+  on Enter (Go's OnSubmitted and FocusLost). `taken` holds the text
+  `display` last set, so the second of the two takes nothing: one
+  message, not two.
+- **Finding:** Enter's default must be prevented in a `NumberBox`.
+  Otherwise refused text's message took the focus to its OK button,
+  and the same key press pressed it, so the message closed unseen. This
+  was seen in Chromium and Firefox; `sheet.spec.ts` fails without the
+  fix.
+- The selected Ability's linked-content button (`abilityLinked`) stays disabled
+  until Phase 9.
+- Go's `addAttack` method is `newAttack` here, since `addAttack` is
+  the button's field.
+- Cancel in the attack dialog puts the attack back *in place*
+  (`Object.assign` into the same `calc.Number`s), since the rows and
+  boxes hold those objects. The unit test adds a check Go lacks, that
+  Cancel also takes back an END override made in the dialog. A planted
+  bug proved it was needed.
+- The attack dialog's message for refused text is Go's own ("Not a
+  number for ROLL. The computed number is used."), not `notANumber`'s
+  longer one, as in Go's `attack.go` and `linked.go`. This is a small
+  inconsistency carried over from Go, left as it is.
+- Planted, failing:
+  - Cancel keeps the mods;
+  - Cancel keeps the END;
+  - Barrier's box shown inverted;
+  - no refresh after NPC Type;
+  - no `taken` guard;
+  - a row's DX refusing 1/2;
+  - OK taking a nameless attack;
+  - Enter's default not prevented (browser test only).
+- `files.spec.ts`'s `changed` now types over the Character Name and
+  puts it back, instead of setting `modified` by hand.
 
 ## Phase 8 The Background and Fluff tabs
 

@@ -34,6 +34,8 @@ export class Dialogs {
   readonly doc: Document;
   /** The open dialogs, the top one last. */
   readonly escapes: Open[] = [];
+  /** How many dialogs have been made: their titles' ids */
+  private made = 0;
 
   constructor(doc: Document) {
     this.doc = doc;
@@ -67,7 +69,8 @@ export class Dialogs {
 
   /**
    * modal shows a dialog of body and a row of buttons, the focus on
-   * focus, Escape doing esc while it is the top dialog. It returns what
+   * focus, Escape doing esc while it is the top dialog; titled heading
+   * (Title by default), and of class cls too, if given. It returns what
    * closes it: off the stack, out of the page, and the focus back where
    * it was.
    */
@@ -76,14 +79,19 @@ export class Dialogs {
     buttons: HTMLButtonElement[],
     focus: HTMLElement,
     esc: () => void,
+    heading = Title,
+    cls?: string,
   ): () => void {
     const doc = this.doc;
     const back = doc.activeElement;
     const d = doc.createElement("dialog");
     d.className = "dialog";
+    if (cls !== undefined) d.classList.add(cls);
     const title = doc.createElement("div");
     title.className = "dialog-title";
-    title.textContent = Title;
+    title.id = "dialog-title-" + String(++this.made);
+    title.textContent = heading;
+    d.setAttribute("aria-labelledby", title.id);
     const main = doc.createElement("div");
     main.className = "dialog-body";
     main.append(...body);
