@@ -192,14 +192,45 @@ break, as yaml.v3 writes it), numbers and the sheet's `4/5`, `1/2`,
 `10+` plain, `overrides` a flow sequence, sequences indented under
 their key (`  abilities:\n    - name: ...`).
 
-The `yaml` library's emitter is configured (indentation, `indentSeq`,
-line width off, `defaultStringType`, per-node `type`) and, where that
-isn't enough, its scalars' style is chosen by a port of libyaml's
-`analyze_scalar`, the function yaml.v3 decides with. Phase 3.4 finds
-out which. **If some case can't be made byte-identical**, the fallback
-oracle is ova_cg_po's and ova_cg_go's: ova_fmt_po formats the saved
-copy as it formats the fixture, and the copy reloads with no notices
-and saves the same bytes again. Any such case is a finding, here.
+Phase 3.4 found (2026-11-07) that no setting of the `yaml` library's
+gives those bytes: it picks styles its own way (`#1 fan` double-quoted
+where yaml.v3 single-quotes it, `😀` left as it is where yaml.v3
+writes `"\U0001F600"`, `1_000` and `2026-11-07` left plain where
+yaml.v3 quotes them; seen with yaml 2.9.1). So the structure is the library's nodes (`Document`,
+`YAMLSeq`, `YAMLMap`, `Pair`, `Scalar`), but every scalar's text is
+written by a port of yaml.v3's, installed as the library's string
+tag's `stringify` (a `customTags` that replaces the `str` tag):
+
+- the style node() asks for (a `Text`, save.go's `text()`, is quoted
+  if `resolve` reads its plain text as anything but a string; text
+  with a line break is a literal) and then `select_scalar_style`'s,
+  from `analyze_scalar`;
+- `resolve` as yaml.v3 has it: its table of booleans, nulls and
+  infinities, and Go's `strconv` for integers (base prefixes, 64-bit
+  range, `_` between digits) and floats, and `time.Parse` for its four
+  timestamp layouts;
+- the single-quoted, double-quoted (yaml.v3's escapes, uppercase hex)
+  and literal (`|`, an indent hint, `-` or `+`) writers.
+
+**ova_cg_go builds with `go.yaml.in/yaml/v3` v3.0.4**, not
+`gopkg.in/yaml.v3` v3.0.1. They differ here in one way: v3.0.4 always
+ends a block scalar's header with a line break, so a literal that
+starts with a break has a blank line after `|2-`.
+
+The library's own `ctx.indent` is the indent yaml.v3 writes a
+scalar's continuation lines at, in a mapping's value and a sequence's
+item, two levels down. `lineWidth: 0` because yaml.v3's width is -1
+(it never breaks a line); the library breaks only a flow collection
+longer than the width by itself, which no `overrides:` list is, so
+it's a guard. `flowCollectionPadding: false` gives `[a, b]`.
+
+Checked against 657 texts written by yaml.v3 itself (a throwaway Go
+program in the scratchpad), 656 alike; 85 of them, covering each
+branch, are `test/core/scalars.test.ts`. **The one difference**, not
+worth matching: a literal text ending in U+2028 or U+2029 (with a
+`\n` elsewhere, or it isn't a literal). yaml.v3 counts the LS as the
+line's end and writes the next key straight after it; the library
+always ends the line with `\n`. Both read back as the same text.
 
 Comments in a loaded file are not kept, as in ova_cg_po and ova_cg_go.
 
@@ -601,7 +632,7 @@ more for a relative base. Planted bugs, each failing it: a leading
 prefix taken for a directory; `""` for nothing left, not `"."`; a
 relative path rebased with no `from`; `Dir` at the root `""`.
 
-### Phase 3.4 save
+### Phase 3.4 save [done]
 
 `src/core/save.ts` from `internal/save`. First a scratch experiment:
 the `yaml` library's options against yaml.v3's output for the awkward
@@ -617,6 +648,17 @@ expected notices, saved (into `obj/files/NAME.yaml`), equal to
 the same; the refused files; `count:`; awkward text; several
 characters (Acacia, Zurkrieg, Fragment, Options, `two-documents`);
 `copy`.
+
+Done (2026-11-07): the writer is "The YAML a save writes"; the node
+builders are save.go's, in its order. Every fixture saves as
+`test/golden/NAME.yaml`, byte for byte. `save.test.ts` has Go's checks
+with their labels, but its save to a missing directory and load of a
+missing file, which the page can't do (it downloads, and is handed a
+file's text). `scalars.test.ts` checks the writer against yaml.v3's
+outputs. Planted bugs, each failing a check: no timestamps in
+`resolve` (`"2026-11-07"` written plain); no `+` chomp; a `'` not
+doubled in single quotes. Without `lineWidth: 0` nothing fails: no
+real list is long enough (above).
 
 ### Phase 3.5 The round trip through ova_fmt_po
 
