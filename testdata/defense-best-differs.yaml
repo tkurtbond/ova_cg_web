@@ -1,0 +1,13 @@
+# One Defense, 3, where the rules give 2/3/4: read as the best,
+# Incorporeal Form's, so a notice for it, and saved as one value.
+- name: Defense Best Differs
+  abilities:
+    - name: Barrier
+      level: 1
+    - name: Incorporeal Form
+      level: 2
+  combat:
+    defense: 3
+    health: 40
+    endurance: 40
+    threat-value: 6

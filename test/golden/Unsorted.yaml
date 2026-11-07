@@ -1,0 +1,89 @@
+- name: Unsorted
+  tagline: Nothing here is in alphabetical order, and that's the point.
+  abilities:
+    - name: Attack
+      level: 3
+      detail: Sword
+      perks:
+        - Armor Piercing
+        - Ranged
+      flaws:
+        - Ineffective
+        - Weapon
+    - name: Combat Expert
+      level: 1
+    - name: Companion
+      level: 1
+      detail: Sidekick
+      companion:
+        name: Sidekick
+        abilities:
+          - name: Agile
+            level: 1
+          - name: Tough
+            level: 1
+        weaknesses:
+          - name: Frail
+            level: -1
+          - name: Quirk
+            level: -1
+    - name: Magic, Testing
+      level: 2
+      spells:
+        - name: Zephyr Blast
+          ability: Attack
+          level: 2
+          endurance: 5
+          overrides: [endurance]
+        - name: Aegis Ward
+          ability: Combat Expert
+          level: 1
+          endurance: 3
+          overrides: [endurance]
+    - name: Quick
+      level: 2
+    - name: Transformation
+      level: 1
+      abilities:
+        - name: Armored
+          level: 1
+        - name: Evasive
+          level: 1
+        - name: Strong
+          level: 2
+      weaknesses:
+        - name: Bizarre Appearance
+          level: -1
+        - name: Slow
+          level: -1
+  weaknesses:
+    - name: Clumsy
+      level: -1
+    - name: Obsession
+      level: -2
+      detail: Winning
+    - name: Short-Tempered
+      level: -1
+  combat:
+    defense: 4
+    health: 20
+    endurance: 15
+    threat-value: 5
+    overrides: [endurance, health, threat-value]
+    attacks:
+      - name: Wild Swing
+        perks:
+          - Armor Piercing
+          - Ranged
+        flaws:
+          - Ineffective
+          - Weapon
+        roll: 4
+        dx: 3
+        endurance: 0
+        overrides: [roll]
+      - name: First Strike
+        roll: 3
+        dx: 2
+        endurance: 0
+        overrides: [roll, dx]

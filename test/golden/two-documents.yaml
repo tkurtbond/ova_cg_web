@@ -1,0 +1,10 @@
+- name: First Of Two
+  fragment: true
+  abilities:
+    - name: Smart
+      level: 1
+- name: Second Of Two
+  fragment: true
+  weaknesses:
+    - name: Fussy
+      level: -1

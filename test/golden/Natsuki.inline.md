@@ -1,0 +1,27 @@
+**Natsuki.** A ruthless corporate CEO determined to prove her
+superiority over every man she meets. Natsuki fought her way up the
+corporate ladder at Malicron only to find herself treated as a trophy
+rather than a talent. Once she finally seized control of the company,
+she purged its male staff entirely and built a gauntlet capable of
+enforcing her will by force, determined that no man would ever hold
+power over her again. Commanding, intimidating, and openly
+contemptuous of men, Natsuki carries herself with an air of intense,
+calculated authority. *Agile +2, Attack +2 (Iron Fist), Beautiful +2,
+Intimidating +2, Knowledge +4 (Business), Knowledge +2 (Flowers),
+Minions +2, Position of Power +3 (Malicron President), Quick +2,
+Strong +3, Wealthy +5; Arrogant −2, Fear −2 (Being Held Against Will),
+Focus −1 (Strong Requires Gauntlet), Greedy −1, Hatred −2 (The Y
+Chromosome), Infamous −2 (Ruthless Man-Hater), Loner −1, Obsession −2
+(Proving Her Superiority), Overconfident −2, Quirk −1 (Obnoxious
+Laugh), Short-Tempered −2, Soft Spot −1 (Flowers), Stubborn −2.*
+Gauntlet Bull (Stunning; Inaccurate, Weapon): Roll 3, DX 6, End 0. A
+fierce punch with speed and power can bowl over even stalwart foes.
+Gauntlet Bear (Paralyzing; Ineffective, Weapon): Roll 4, DX 5, End 0.
+Natsuki grasps her opponent in her clutches and doesn't let go.
+Gauntlet Crash (Area Effect, Stunning; Ineffective, Weapon): Roll 4,
+DX 5, End 10. Natsuki pounds the ground, sending out a shockwave of
+destruction all around her. Stiletto Kick (Affinity: Martial Arts):
+Roll 4, DX 3\*, End 0. Even without her signature gauntlet, Natsuki
+proves a formidable fighter. Defense 4. Health 40, Endurance 40.
+TV 14.
+

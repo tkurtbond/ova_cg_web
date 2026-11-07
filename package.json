@@ -1,0 +1,29 @@
+{
+  "name": "ova_cg_web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "An OVA character generator in a single web page",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "node build/build.mjs",
+    "build:debug": "node build/build.mjs --debug",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:browser": "playwright test",
+    "check": "if ls src/core/*.ts >/dev/null 2>&1; then tsc -p tsconfig.core.json; fi && tsc -p tsconfig.ui.json && tsc -p tsconfig.json && prettier --check ."
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "@types/node": "22.20.5",
+    "esbuild": "0.28.2",
+    "happy-dom": "21.0.4",
+    "prettier": "3.9.10",
+    "typescript": "7.0.2"
+  },
+  "dependencies": {
+    "yaml": "2.9.1"
+  }
+}

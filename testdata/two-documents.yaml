@@ -1,0 +1,15 @@
+---
+# The generator's own: two YAML documents, a character in each. The
+# generator reads both, in order, and saves them as one document, a
+# sequence of the two, which ova_fmt_po formats the same.
+- name: First Of Two
+  fragment: true
+  abilities:
+    - name: Smart
+      level: 1
+---
+- name: Second Of Two
+  fragment: true
+  weaknesses:
+    - name: Fussy
+      level: -1

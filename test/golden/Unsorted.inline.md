@@ -1,0 +1,16 @@
+**Unsorted.** *Attack +3 (Sword) [Perks: Armor Piercing, Ranged;
+Flaws: Ineffective, Weapon], Combat Expert +1, Companion +1
+(Sidekick), Magic, Testing +2, Quick +2, Transformation +1; Clumsy −1,
+Obsession −2 (Winning), Short-Tempered −1.* Wild Swing (Armor
+Piercing, Ranged; Ineffective, Weapon): Roll 4\*, DX 3, End 0. First
+Strike: Roll 3\*, DX 2\*, End 0. Defense 4. Health 20\*, Endurance
+15\*. TV 5\*.
+
+**Companion: Sidekick.** *Agile +1, Tough +1; Frail −1, Quirk −1.*
+
+**Magic, Testing.** Spells: Zephyr Blast (Attack +2; 5\* Endurance),
+Aegis Ward (Combat Expert +1; 3\* Endurance).
+
+**Transformation.** Grants: Armored +1, Evasive +1, Strong +2; Bizarre
+Appearance −1, Slow −1.
+

@@ -1,0 +1,18 @@
+- name: '#1 "Ace"'
+  tagline: '''Til the end: - and | >'
+  background: |2-
+      Indented first line,
+    then a second; # not a comment
+  combat:
+    defense: 2
+    health: 40
+    endurance: 40
+    threat-value: 5
+  notes:
+    - header: '? Header'
+      text: |-
+        @line one
+
+        %line three
+  fluff:
+    hobbies: '#1 fan'

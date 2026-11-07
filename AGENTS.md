@@ -56,7 +56,7 @@ make                 # dist/ova_cg_web.html (npm run build: tsc --noEmit, esbuil
 make test            # the unit tests under Node (node --test), then
                      #   test/files.sh (needs ova_fmt_po: OVA_FMT_PO)
 make test-browser    # the built page in headless Chromium and Firefox (Playwright)
-make check           # tsc --noEmit and the linter
+make check           # tsc on the three projects (core, ui, tests) and prettier --check
 make check-pages     # rules' pages against the rulebook PDF (needs mutool)
 make golden          # copy ova_cg_go's obj/files/ into test/golden/ (run its make test first)
 make clean           # rm -rf obj dist
@@ -78,6 +78,11 @@ make clean           # rm -rf obj dist
   go-ahead), before ova_cg_web saves it.
 
 ## Browsers and the desktop
+
+- **The page must work in Firefox and in Chromium-based browsers**
+  (the user's requirement, 2026-11-07). Every browser test runs in
+  both; never use a feature only one of them has without a fallback
+  that works in the other (PLAN.md, "Browsers").
 
 - **An agent never opens windows on the user's desktop** (the user's
   rule for ova_cg_po, 2026-10-06, which holds here): not the page in
@@ -104,6 +109,10 @@ make clean           # rm -rf obj dist
   DOM and no browser global; its tests run under plain Node. Only
   `src/ui/` touches the DOM. Every number on the page comes from
   `calc.compute`; no event handler does arithmetic of its own.
+- **Only erasable TypeScript**: Node runs the tests by stripping
+  types, so no `enum`, no value `namespace`, no constructor parameter
+  properties (`erasableSyntaxOnly` refuses them). Imports name the
+  `.ts` file.
 - **Port names and order faithfully.** Go's `Compute` applies the
   rules in an order that sets the order of the warnings; keep it.
   Go's exported `CamelCase` becomes `camelCase` functions and

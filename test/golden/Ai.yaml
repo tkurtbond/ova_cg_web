@@ -1,0 +1,105 @@
+- name: Ai
+  tagline: I have to believe that someone out there cares about me. I have to be strong for their sake!
+  summary: An amnesiac psychic evading the mysterious men in black who hunt her.
+  background: |-
+    Ai awoke in an alley with no memory of who she was. As she
+    wandered Tokyo trying to survive, she discovered she could sense
+    others' thoughts and emotions, and even move objects with her
+    mind. Worse, she found herself doggedly pursued by strange,
+    unsettling men in black suits.
+  personality: |-
+    Shy and withdrawn, Ai struggles to connect with people and finds
+    it hard to put her feelings into words. She'd rather avoid a
+    problem than face it -- though her real trouble is that she has
+    nowhere left to run.
+  abilities:
+    - name: Art of Invisibility
+      level: 2
+    - name: Attack
+      level: 1
+      detail: Telekinetic Power
+    - name: Barrier
+      level: 3
+      perks:
+        - No Gesture
+      endurance: 5
+      note: provides an alternate Defense Roll (the second Defense value below)
+    - name: Dexterous
+      level: 2
+    - name: Knowledge
+      level: 1
+      detail: String Games
+    - name: Psychic
+      level: 3
+    - name: Quick
+      level: 2
+    - name: Sixth Sense
+      level: 3
+    - name: Telekinesis
+      level: 3
+  weaknesses:
+    - name: Amnesia
+      level: -3
+    - name: Fear
+      level: -2
+      detail: Men in Black Suits
+    - name: Frail
+      level: -2
+    - name: Pacifist
+      level: -1
+    - name: Shy
+      level: -3
+    - name: Wanted
+      level: -3
+      detail: Men in Black
+    - name: Weak
+      level: -1
+  combat:
+    defense: 4/5
+    health: 20
+    endurance: 40
+    threat-value: 10
+    attacks:
+      - name: Telekinetic Push
+        perks:
+          - No Gesture
+          - Ranged
+          - Stunning
+        flaws:
+          - Ineffective
+          - Low Penetration
+        description: Ai lashes out with her telekinetic powers, pushing the target away.
+        roll: 2
+        dx: 4
+        endurance: 5
+        telekinesis: true
+      - name: Mind Break
+        perks:
+          - Armor Piercing
+          - Fatiguing
+          - No Gesture
+          - Ranged
+          - Will Attack
+        flaws:
+          - name: Cancel
+            detail: Unliving
+            cost: -5
+        description: Ai fills another's mind with a confusing din of psychic energy, draining the opponent.
+        roll: 2
+        dx: 5
+        endurance: 5
+        telekinesis: true
+  fluff:
+    concept: Amnesiatic ESPer
+    birthday: May 13
+    age: "17"
+    gender: Female
+    height: 5'4"
+    weight: 111 lbs.
+    hair: Pink
+    eyes: Lavender
+    association: Unknown
+    hobbies: String Games
+    favorite-food: Taiyaki
+    allies: None
+    enemies: Men in Black

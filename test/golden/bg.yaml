@@ -1,0 +1,7 @@
+- name: Someone
+  portrait: ../face.png
+  combat:
+    defense: 2
+    health: 40
+    endurance: 40
+    threat-value: 5

@@ -1,0 +1,21 @@
+- name: Weird Exchange Student
+  fragment: true
+  background: |-
+    The **Weird Exchange Student** really is strange. She keeps to
+    herself, forever writing secrets in an old leather book, and
+    during long classes she can be heard murmuring to people who
+    aren't there.
+  abilities:
+    - name: Knowledge
+      level: 2
+      detail: The Occult
+    - name: Psychic
+      level: 1
+    - name: Spirit Medium
+      level: 1
+  weaknesses:
+    - name: Outcast
+      level: -1
+      detail: Weird Kid
+    - name: Shy
+      level: -2

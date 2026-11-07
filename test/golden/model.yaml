@@ -1,0 +1,11 @@
+- name: Typed
+  npc-type: Secondary
+  character-hooks: Hooks.
+  abilities:
+    - name: Tough
+      level: 1
+  combat:
+    defense: 2
+    health: 30
+    endurance: 20
+    threat-value: 2

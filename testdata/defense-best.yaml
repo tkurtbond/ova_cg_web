@@ -1,0 +1,13 @@
+# One Defense where Barrier and Incorporeal Form give three, 2/4/4, as
+# the book prints Acacia's: the best, so no notice, and saved so.
+- name: Defense Best
+  abilities:
+    - name: Barrier
+      level: 2
+    - name: Incorporeal Form
+      level: 2
+  combat:
+    defense: 4
+    health: 40
+    endurance: 40
+    threat-value: 7

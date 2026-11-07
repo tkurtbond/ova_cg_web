@@ -1,0 +1,18 @@
+- name: All Options
+  options:
+    base-zero: 5
+    power-ceiling: 15
+    scaled-cost: true
+    combined-effectiveness: true
+  abilities:
+    - name: Quick
+      level: 2
+  weaknesses:
+    - name: Clumsy
+      level: -1
+- name: One Option
+  options:
+    power-ceiling: 20
+  abilities:
+    - name: Strong
+      level: 3

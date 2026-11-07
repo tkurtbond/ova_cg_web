@@ -1,0 +1,25 @@
+**Shou.** A playful, dangerously skilled assassin hunting down his
+former best friend. Raised from childhood by the assassins of Clan
+Cave Fox, Shou never had to grow up -- his skill let him treat killing
+as a game. He spent years close to his fellow assassin Raine, until
+Raine broke from the Clan. Now Shou has been sent to track his old
+friend down, and he's treating the hunt as the best game yet.
+Cheerful, playful, and utterly without remorse, Shou brings a
+childlike energy to a very adult occupation. He's easily won over by
+food, at least for a little while. *Agile +2, Art of Invisibility +3,
+Attack +2 (Ninjutsu), Combat Expert +1, Evasive +2, Knowledge +2
+(Food), Perceptive +2, Quick +3, Strong +1, Teleport +3, Tough +2;
+Easily Distracted −1, Impulsive −2, Infamous −2 (Assassin),
+Overconfident −2, Quirk −2 (Playfulness at All Times), Rival −2
+(Raine), Rude −2, Servitude −2 (Clan Cave Fox), Soft Spot −2 (Food),
+Vulnerability −2 (Light).* Bladed Tonfas (Defensive; Weapon): Roll 5,
+DX 4, End 0. The addition of a gleaming edge makes these otherwise
+humble weapons deadly. Sweep Kick (Stunning; Ineffective x2): Roll 5,
+DX 2, End 0. Shou unbalances his opponent with a swift, low kick.
+Pressure Strike (Impairing; Ineffective x2): Roll 5, DX 2, End 0. A
+precise blow that impedes the opponent's ability to fight. Dark Spark
+(Affinity: Darkness; Effective x2, Ranged; Backlash x2): Roll 5, DX 5,
+End 0. By focusing dark magics and striking his blades together, Shou
+sends out a bolt of energy that devours light in its path. Defense 7.
+Health 60, Endurance 40. TV 18.
+

@@ -1,0 +1,24 @@
+- name: Rock & Roll <Star>
+  abilities:
+    - name: Attack
+      level: 2
+      detail: Sword & Shield <Reinforced>
+    - name: Knowledge
+      level: 3
+      detail: Tom & Jerry <Cartoons>
+  weaknesses:
+    - name: Obsession
+      level: -2
+      detail: Cats & Dogs
+  combat:
+    defense: 4
+    health: 30
+    endurance: 20
+    overrides: [endurance, defense, health]
+    attacks:
+      - name: Slash & Burn
+        description: A wild <swing> that cuts & burns everything nearby.
+        roll: 4
+        dx: 3
+        endurance: 5
+        overrides: [roll, endurance]

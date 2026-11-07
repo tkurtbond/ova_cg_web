@@ -1,0 +1,11 @@
+- name: Wisp
+  tagline: A draft through a closed room.
+  abilities:
+    - name: Incorporeal Form
+      level: 3
+  combat:
+    defense: 2/6
+    health: 40
+    endurance: 40
+    threat-value: 9
+    overrides: [defense-2]

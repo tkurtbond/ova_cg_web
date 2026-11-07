@@ -1,0 +1,14 @@
+# Two Defense values where the rules give three, 2/3/4: the second is
+# Barrier's, the first alternate, and Incorporeal Form's is the rules';
+# no notice, and saved with all three.
+- name: Defense Two
+  abilities:
+    - name: Barrier
+      level: 1
+    - name: Incorporeal Form
+      level: 2
+  combat:
+    defense: 2/3
+    health: 40
+    endurance: 40
+    threat-value: 7

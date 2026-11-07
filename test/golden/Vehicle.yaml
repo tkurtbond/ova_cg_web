@@ -1,0 +1,26 @@
+- name: Test Pilot
+  abilities:
+    - name: Vehicle
+      level: 3
+      detail: Thunderhawk
+      vehicle:
+        name: Thunderhawk
+        abilities:
+          - name: Flight
+            level: 2
+          - name: Tough
+            level: 3
+        weaknesses:
+          - name: Awkward Size
+            level: -2
+        combat:
+          defense: 3
+          health: 60
+          endurance: 40
+          overrides: [defense, health]
+          attacks:
+            - name: Missile Barrage
+              roll: 5
+              dx: 4
+              endurance: 10
+              overrides: [roll, dx, endurance]

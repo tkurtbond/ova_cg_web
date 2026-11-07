@@ -1,0 +1,13 @@
+- name: Bastion
+  tagline: Nothing gets through, and nothing holds her.
+  abilities:
+    - name: Barrier
+      level: 2
+    - name: Incorporeal Form
+      level: 1
+  combat:
+    defense: 2/4/6
+    health: 40
+    endurance: 40
+    threat-value: 9
+    overrides: [defense-3]

@@ -215,6 +215,15 @@ portrait").
 
 ## Decisions the port makes
 
+### Browsers
+
+**The page must work in Firefox and in Chromium-based browsers**
+(Chrome, Chromium, Edge, Brave, ...), the user's requirement
+(2026-11-07): every feature, in both, from `file://`. Every browser
+test runs in both, and a feature that only one supports isn't used
+(or has a fallback that works in the other). Safari (WebKit) is best
+effort: tried in Phase 14.1, not required.
+
 ### Files in the browser
 
 - **Open...** is an `<input type="file" accept=".yaml,.yml">`; a file
@@ -304,9 +313,9 @@ Each phase ends with its tests passing (`make test`; `make
 test-browser` from Phase 5 on) and its heading marked `[done]`, with
 what was found written under it.
 
-## Phase 0 Skeleton
+## Phase 0 Skeleton [done]
 
-### Phase 0.1 The toolchain
+### Phase 0.1 The toolchain [done]
 
 `package.json` with TypeScript, esbuild, `yaml`, happy-dom and
 Playwright pinned; `tsconfig.json` (`strict`, ES2022, DOM types for
@@ -316,7 +325,19 @@ of AGENTS.md; `.gitignore` (`node_modules/`, `obj/`, `dist/`). Find out
 whether Node 22's type stripping runs the tests directly or esbuild
 must bundle them first, and record which.
 
-### Phase 0.2 The single-file build
+Done (2026-11-07): TypeScript 7.0.2, esbuild 0.28.2, `yaml` 2.9.1,
+happy-dom 21.0.4, @playwright/test 1.65.0, prettier 3.9.10,
+@types/node 22.20.5, all exact. Three projects over
+`tsconfig.base.json`: `tsconfig.core.json` (`src/core`, lib ES2022, no
+`types`: a probe using `document` or `process` there failed to
+compile), `tsconfig.ui.json` (`src/core`, `src/ui`, `src/main.ts`, with
+the DOM) and `tsconfig.json` (tests, tools, build scripts, with Node's
+types). `make check` runs all three and prettier; the core project is
+skipped while `src/core` is empty. **Node 22.22 runs the `.ts` tests
+directly** (type stripping, no flag, no warning), so nothing bundles
+the tests; that limits the source to erasable TypeScript ("Findings").
+
+### Phase 0.2 The single-file build [done]
 
 `build/build.mjs`: esbuild bundles `src/main.ts` (minified, one
 script, no source map in the release, an inline one in a debug build),
@@ -325,12 +346,29 @@ script in a `<script>`, escaping `</script` in the bundle. A page that
 says hello, opened by Playwright from `file://`, proves it: no
 request, no console error.
 
-### Phase 0.3 Fixtures and golden files
+Done (2026-11-07): `build/build.mjs` and `build/inline.mjs`, an IIFE
+targeting Firefox 115 and Chrome 120; `test/build/inline.test.ts`
+(placement, `$&` kept, the refusals). The hello page is 974 bytes and
+passes `test/browser/build.spec.ts` in Playwright's headless Chromium
+(headless shell 158) and Firefox 159 from `file://`: its title and
+text, no request, no console error. Planted bugs failed the checks:
+the unsafe-text check taken out and a string replacement (5 unit
+tests), and a `fetch` added to the page (both browsers, through the
+CSP's console errors). The Playwright browsers took 1 GB under
+`~/.cache/ms-playwright/` (Chromium, its headless shell, Firefox,
+ffmpeg), on Fedora as Playwright's Ubuntu 24.04 fallback builds.
+
+### Phase 0.3 Fixtures and golden files [done]
 
 `testdata/` copied from ova_cg_go's; `make golden` copying ova_cg_go's
 `obj/files/` into `test/golden/` (after its `make test`);
 `tools/rulebook-headings.py` copied; README.md, a stub. Record the
 commit of ova_cg_go the golden files came from in `test/golden/SOURCE`.
+
+Done (2026-11-07): the 57 fixtures (the same as ova_cg_po's
+`test/data/`); `make golden` runs ova_cg_go's save and markdown tests
+before copying, so the files are fresh: 169 of them (59 names, the 57
+fixtures and two of the save tests' own) from ova_cg_go `e31a351`.
 
 ## Phase 1 rules
 
@@ -521,8 +559,9 @@ reuses the tab. Record what each browser does under "Findings".
 
 ### Phase 14.1 Browsers and size
 
-The Playwright suite in Chromium, Firefox and WebKit, from `file://`
-and from a local `http://` server; the built file's size recorded
+The Playwright suite in Chromium and Firefox (required) and WebKit
+(best effort, "Browsers"), from `file://` and from a local `http://`
+server; the built file's size recorded
 here and a budget set; no network request, no console error, on every
 fixture.
 
@@ -544,7 +583,7 @@ page (Help > About, or the title line's tooltip).
   `test/golden/`; `src/ui` on happy-dom; then `test/files.sh` (needs
   ova_fmt_po at `OVA_FMT_PO`).
 - `make test-browser`: the built page, headless, in Chromium and
-  Firefox (and WebKit in Phase 14).
+  Firefox, both required (and WebKit, best effort, in Phase 14).
 - `make check-pages`: rules' pages against the PDF's headings.
 - `make check`: `tsc --noEmit` for both projects, and the linter.
 - The oracle for calculations is the sample characters; the oracle for
@@ -555,7 +594,21 @@ page (Help > About, or the title line's tooltip).
 What the port finds out about TypeScript, the `yaml` library, esbuild
 and the browsers that ova_cg_go's design didn't have to know.
 
-None yet.
+- **Only erasable TypeScript** (2026-11-07). Node runs the tests by
+  stripping types, which can't do what needs code generated: no
+  `enum`, no `namespace` with values, no constructor parameter
+  properties. `erasableSyntaxOnly` makes `tsc` refuse them. Go's
+  `iota` constants become `as const` objects or plain `const`s, and an
+  import names the `.ts` file (`allowImportingTsExtensions`), which
+  esbuild accepts too.
+- **esbuild escapes `</script` but not `<!--` or `<script`** (0.28.2,
+  in strings, template literals and regular expressions, minified or
+  not). `build/inline.mjs` refuses a bundle holding any of the three
+  rather than rewriting it.
+- **The page's Content-Security-Policy forbids fetching** anything
+  (`default-src 'none'`, with inline script and style, and `blob:` and
+  `data:` images for the portrait), so the no-network rule is enforced
+  by the browser as well as tested.
 
 ## Open questions
 

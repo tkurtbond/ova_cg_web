@@ -1,0 +1,27 @@
+- name: Oni
+  fragment: true
+  background: |-
+    **Oni** are Japanese ogres with horned, demonic faces and unearthly
+    red or blue skin, said to carry iron clubs and possess tremendous
+    strength. Not every oni is evil, but inviting one to tea to find
+    out may be unwise.
+  abilities:
+    - name: Attack
+      level: 1
+      detail: Iron Club
+    - name: Intimidating
+      level: 2
+    - name: Strong
+      level: 2
+    - name: Tough
+      level: 2
+  weaknesses:
+    - name: Awkward Size
+      level: -1
+      detail: Big
+    - name: Bizarre Appearance
+      level: -3
+    - name: Short-Tempered
+      level: -2
+    - name: Slow
+      level: -1
