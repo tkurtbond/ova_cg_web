@@ -410,13 +410,58 @@ Done (2026-11-07):
   Ammunition at most twice, Short-Tempered on p. 78, Tough +5 as 50,
   and the aliases ignored.
 
-## Phase 2 calc
+## Phase 2 calc [done]
 
 `src/core/calc.ts` from `internal/calc/calc.go`;
-`test/core/calc.test.ts` from `calc_test.go`: the samples, every number
-their files hold, the two rulings as overrides, every hand-made case,
-`Number.parse`'s grammar. The samples are built by hand in the test, as
-the Go test builds them, since entities doesn't exist yet.
+`test/core/calc.test.ts` from `calc_test.go`: every hand-made case and
+`Number.parse`'s grammar. ~~The samples are built by hand in the test,
+as the Go test builds them, since entities doesn't exist yet.~~ The Go
+test doesn't build the samples: `calc_test.go` holds only the hand-made
+cases, and the samples, every number their files hold and the two
+rulings as overrides are checked in `character_test.go`, from their
+files. They move to Phase 3.2, as in ova_cg_go.
+
+Done (2026-11-07):
+
+- **Classes, without `Owner`.** `Number`, `Mod`, `Spell`, `Trait`,
+  `Attack`, `Options` and `Sheet` are classes, and `Warning` an
+  interface. Go's `NewSheet`, `InitTrait`, `InitMod`, `InitSpell` and
+  `InitAttack` became the constructors, so `character`'s records can
+  extend them. A Trait still starts marked for TV from its item's
+  `HalfTV` flag, as `InitTrait` does. Nothing holds an `Owner`.
+- **`calc.Number` shadows the global `Number`** inside the module. The
+  module never uses the global, and callers import it as a namespace
+  (`calc.Number`), so Go's name is kept.
+- **Kinds and codes.** `SheetKind` (`Character` … `BossSheet`) and
+  `Code` (`UnknownItem` … `NotBoss`) are plain consts with literal
+  union types, as rules' kinds are.
+- **Go's integer arithmetic.** Go's truncating `/` is `quo`
+  (`Math.trunc`), in `halfTVLevel` and `halfUp`. `%` already takes the
+  dividend's sign in both languages, so the cost-step check is the
+  same.
+- **The rules run in Go's order**, which sets the order of the
+  warnings: each trait and its form, then the partners, the totals,
+  the attacks, Defense, Health and TV.
+- **Ported checks.** The 11 tests of `calc_test.go` keep their labels.
+  As with Go's `t.Errorf`, a failed check doesn't stop its test; the
+  test reports every failure at its end.
+- **The checks can fail.** Planted bugs each failed a test:
+  - a marked Ability's half rounded down;
+  - no 5-point cost step;
+  - a Companion's TV not floored at 1;
+  - TV's roll keeping Accurate;
+  - `halfUp` wrong for negatives;
+  - seven digits accepted;
+  - no 1/2 DX at 0;
+  - Boss Abilities' levels counted.
+
+  One planted bug passed at first: `RedirectableAlone` ignoring
+  Ranged, Strength-Powered. Neither `calc_test.go` nor ova_cg_po's
+  TestCalc has an attack with Redirectable and only Ranged,
+  Strength-Powered. That attack is a real one, a thrown weapon or a
+  bow drawn by strength (the user, 2026-11-07), so "limits" now has a
+  check of its own, not in ova_cg_go's: such an attack isn't warned
+  of. The planted bug fails it.
 
 ## Phase 3 Files
 
@@ -434,7 +479,9 @@ several documents (`two-documents`), and record it.
 `src/core/character.ts` from `internal/character`: the records, the
 edits, `build`, `fromEntity` and its notices, `loadAll`, `one`,
 `recompute`, `bestDefense`, `singleDefense`, `setNpcType`;
-`character.test.ts` from `character_test.go`.
+`character.test.ts` from `character_test.go`, which also checks the
+samples: every number their files hold, and the two rulings as
+overrides (moved here from Phase 2, as in ova_cg_go).
 
 ### Phase 3.3 paths
 

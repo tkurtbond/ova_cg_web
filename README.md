@@ -10,9 +10,9 @@ network. Characters are loaded and saved as the same YAML the other two
 write, which [ova_fmt_po](../ova_fmt_po) and the Ada
 [ova_fmt](../ova_fmt) format.
 
-**Status: Phase 1 of [PLAN.md](PLAN.md)**: the rules tables. The page so
-far says only its name. [DESIGN-OPTIONS.md](DESIGN-OPTIONS.md) says why
-it is built this way.
+**Status: Phase 2 of [PLAN.md](PLAN.md)**: the rules tables and the
+calculations. The page so far says only its name.
+[DESIGN-OPTIONS.md](DESIGN-OPTIONS.md) says why it is built this way.
 
 ## Building
 
