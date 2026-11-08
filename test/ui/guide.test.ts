@@ -1,7 +1,8 @@
 // Phase 15.2's guide panel on happy-dom (PLAN.md, "The guide"): Help >
 // Guide and its check, Back, Next, Close and the step list, the step
 // kept, the ? buttons, Show me and the Window's targets, and no change
-// to the character. The page's own: ova_cg_go has no counterpart. The
+// to the character; and 15.3's guide naming the page's controls as the
+// page does. The page's own: ova_cg_go has no counterpart. The
 // panel's place at each width is test/browser/guide.spec.ts's.
 //
 // DOM nodes are compared with assert.ok(a === b), never assert.equal
@@ -13,7 +14,8 @@ import * as guide from "../../src/core/guide.ts";
 import * as rules from "../../src/core/rules.ts";
 import type { Trait } from "../../src/core/character.ts";
 import { about } from "../../src/ui/version.ts";
-import { HelpMenu, Title, tabNames } from "../../src/ui/window.ts";
+import { Separator } from "../../src/ui/menu.ts";
+import { HelpMenu, Title, linkedLabel, tabNames } from "../../src/ui/window.ts";
 import { checker, load, newWindow, press } from "./setup.ts";
 
 /** Three steps, with an item, a page and two Show me's. */
@@ -245,6 +247,57 @@ test("the guide's every Show me names a target", () => {
   const missing = guide.targets(real).filter((t) => !w.targets.has(t));
   assert.deepEqual(missing, []);
   assert.ok(guide.targets(real).length > 0, "the guide has a Show me");
+});
+
+/** Every bold run's text in g: the controls its steps name. */
+function bold(g: guide.Guide): string[] {
+  const out: string[] = [];
+  const walk = (rs: readonly guide.Inline[]) => {
+    for (const r of rs)
+      if (r.kind === "strong") out.push(guide.plainText(r.content));
+      else if (r.kind === "emphasis") walk(r.content);
+  };
+  for (const s of g.steps)
+    for (const b of s.blocks)
+      if (b.kind === "paragraph") walk(b.content);
+      else for (const it of b.items) walk(it);
+  return out;
+}
+
+test("the guide's controls are called what the page calls them", () => {
+  const { w, p, doc } = opened(real);
+  // The dialogs' controls as well: the attack dialog, Limits, and an
+  // Ability's linked content.
+  assert.ok(load(w, "Miho.yaml"));
+  w.addAttack.click();
+  w.limitsItem.button.click();
+  const shown = new Set<string>(
+    [rules.Form, rules.Spells, rules.Partner, rules.Machine].map((l) =>
+      linkedLabel(l as rules.Link),
+    ),
+  );
+  for (const e of doc.body.querySelectorAll("*")) {
+    if (p.body.contains(e)) continue; // the guide's text itself
+    let own = "";
+    for (const n of e.childNodes) if (n.nodeType === 3) own += n.textContent;
+    if (own.trim() !== "") shown.add(own.trim());
+    const a = e.getAttribute("aria-label");
+    if (a !== null) shown.add(a);
+  }
+  const menus = new Map(
+    w.menu.menus.map((m) => [
+      m.label,
+      m.items.map((it) => (it === Separator ? "" : it.label)),
+    ]),
+  );
+  const { check, done } = checker();
+  for (const b of bold(real)) {
+    const path = b.split(" > ");
+    if (path.length === 2)
+      check(menus.get(path[0]!)?.includes(path[1]!) === true, `menu "${b}"`);
+    else check(b === "Show me" || shown.has(b), `"${b}" on the page`);
+  }
+  done();
 });
 
 test("Escape leaves the panel open", () => {

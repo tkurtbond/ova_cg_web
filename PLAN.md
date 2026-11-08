@@ -1674,12 +1674,40 @@ Done (2026-11-08):
   warns, so it is `assert.ok(... === null)`.
 - The size: 242,731 bytes, from 234,001.
 
-### Phase 15.3 Writing the guide
+### Phase 15.3 Writing the guide [done]
 
 The steps of "The guide", in the guide's own words, in
 `src/guide/guide.md`, passing `make check-guide` and `make
 check-pages`; checked against the page as it is (each control a step
 names exists and is called what the page calls it).
+
+Done (2026-11-08):
+
+- **Fifteen steps**, in the rulebook's order (pp. 17-21) with the
+  page's own between: Before you start (the guide itself, the **?**s
+  and the PDF); Talk with your GM (Discussion, Limits); Who is the
+  character? (Concept, the names, NPC Type); Choose the Abilities;
+  Abilities with more to them (Transformation, both Magics, Companion,
+  Vehicle, and Transformed form); Choose the Weaknesses; Perks and
+  Flaws of an Ability; Attacks; Health, Endurance and the rest (and
+  overrides); Check the totals and warnings; Background; Fluff and a
+  portrait; Save the character; More than one character (and the
+  sample characters, p. 23); Share the sheet (the Markdown tab).
+  Each step has one or two Show me's, 21 of the Window's 26 targets.
+  The rules themselves are left to each name's **?**: the guide says
+  what to do on the page, not what the rules are.
+- **The controls named as the page names them, tested**: every bold
+  run in the guide (`**Add attack...**`, `**Character > Limits...**`)
+  is a control's own text or aria-label on the page (with Miho
+  loaded, the attack dialog and Limits open, and the four linked
+  buttons' labels), or a menu and its item, or "Show me"
+  (`test/ui/guide.test.ts`, "the guide's controls are called what
+  the page calls them"). Planted `**Add Attack...**` and
+  `**Character > Limit...**`: both reported.
+- `make check-guide`: no run of 8 words shared with the rulebook's
+  65,144; `make check-pages`: the guide's 17 pages at their headings.
+- No new target was needed. The built page is 249,285 bytes (from
+  242,731), within the 256 KiB budget.
 
 ### Phase 15.4 Browsers and release
 
