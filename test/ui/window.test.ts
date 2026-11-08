@@ -176,8 +176,17 @@ test("the menus: greyed until their phase, and by keyboard", () => {
     .map((it) => it.label);
   assert.deepEqual(
     enabled,
-    ["New", "Open...", "Save", "Save As...", "Limits...", "Transformed form"],
-    "only File's items, Limits... and Transformed form do anything yet",
+    [
+      "New",
+      "Open...",
+      "Save",
+      "Save As...",
+      "Limits...",
+      "Transformed form",
+      "Add Character",
+      "Duplicate Character",
+    ],
+    "a lone new character: the rest greyed until there are more, or their phase",
   );
   const tops = [0, 1, 2].map((i) => w.menu.top(i));
   assert.deepEqual(

@@ -1104,12 +1104,57 @@ stops being a Boss. `test/ui/limits.test.ts` from `limits_test.go`.
   - `limitsChanged` not refreshing the Weaknesses;
   - keys under a dialog unprevented (unit and browser tests).
 
-## Phase 11 Several characters in a file
+## Phase 11 Several characters in a file [done]
 
 The characters' `<select>`; Character > Add, Duplicate, Remove...,
 Move Up, Move Down, Next, Previous, each greyed where it can do
 nothing; the title's "(N of M)"; Save writing them all, in order.
 `window_test.go`'s `testSeveral`.
+
+### Phase 11: decisions and findings
+
+- The `<select>`, the title's count and Save writing every character
+  were already in place from Phase 6. This phase adds the Character
+  menu's actions. They port ova_cg_go's `appendCharacter`,
+  `duplicateCharacter`, `removeCharacter`, `moveCharacter` and
+  `stepCharacter`, and `showCharacters` greys the items as Go's does:
+  - Remove when there is only one character;
+  - Move Up and Previous at the first;
+  - Move Down and Next at the last.
+- Duplicate uses `save.copy`. Go's `save.Copy` can fail and tells the
+  user so; this one throws only on a programmer's error, so there is
+  no message for it.
+- `test/ui/several.test.ts` ports `testSeveral` with its labels. Two
+  differences:
+  - Save As... downloads the file, and the test loads the download
+    back.
+  - Go's check that Save As rebases a portrait's path is left out,
+    because a portrait's path is saved as it is here ("The portrait").
+- A second test adds:
+  - Alt+Shift+PgDn and PgUp, which don't wrap and are prevented at the
+    ends;
+  - a new character's menu, where only Add and Duplicate are active;
+  - each of Add, Duplicate, Remove, Move Up and Move Down marking a
+    just-opened file as changed. Go's sequence missed a Remove that
+    wasn't a change, because the file was already marked by then.
+- `allShown` moved from `sheet.test.ts` to `setup.ts`, since both tests
+  use it. The window's menu test counts Add and Duplicate as enabled.
+- `test/browser/several.spec.ts` (Chromium and Firefox, headless):
+  - the `<select>` chosen by the user;
+  - Alt+Shift+PgUp and PgDn from the real keyboard;
+  - the Character menu by click, Next greyed at the last;
+  - Add, then Move Up;
+  - Remove's question as a `<dialog>`, with Cancel focused and Escape
+    cancelling, then Remove;
+  - no requests.
+- Planted, failing:
+  - Duplicate sharing the character;
+  - Remove showing the one before;
+  - Remove taking the only character;
+  - Move not following the character;
+  - Next never greyed (unit and browser tests);
+  - Cancel removing anyway;
+  - Remove and Move not counted as a change.
 
 ## Phase 12 The Markdown tab
 

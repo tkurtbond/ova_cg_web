@@ -341,13 +341,25 @@ export class Window {
       () => this.toggleTransformed(),
       true,
     );
-    this.addCharacterItem = item("Add Character"); // Phase 11, and below
-    this.duplicateItem = item("Duplicate Character");
-    this.removeCharacterItem = item("Remove Character...");
-    this.moveUpItem = item("Move Up");
-    this.moveDownItem = item("Move Down");
-    this.nextItem = item("Next Character", keys.next);
-    this.previousItem = item("Previous Character", keys.previous);
+    this.addCharacterItem = item("Add Character", undefined, () =>
+      this.appendCharacter(character.newCharacter()),
+    );
+    this.duplicateItem = item("Duplicate Character", undefined, () =>
+      this.duplicateCharacter(),
+    );
+    this.removeCharacterItem = item("Remove Character...", undefined, () =>
+      this.removeCharacter(),
+    );
+    this.moveUpItem = item("Move Up", undefined, () => this.moveCharacter(-1));
+    this.moveDownItem = item("Move Down", undefined, () =>
+      this.moveCharacter(1),
+    );
+    this.nextItem = item("Next Character", keys.next, () =>
+      this.stepCharacter(1),
+    );
+    this.previousItem = item("Previous Character", keys.previous, () =>
+      this.stepCharacter(-1),
+    );
     this.rulebookItem = item("Open"); // Phase 13
     this.choosePdfItem = item("Choose PDF..."); // Phase 13
     this.menu = new MenuBar(doc, [
@@ -651,7 +663,10 @@ export class Window {
     return `${i + 1}. ${name === "" ? "(no name)" : name}`;
   }
 
-  /** showCharacters lists the characters again, current chosen. */
+  /**
+   * showCharacters lists the characters again, current chosen, and the
+   * Character menu's items are active where they can do something.
+   */
   showCharacters(): void {
     const doc = this.doc;
     const options = this.characters.map((_, i) => {
@@ -664,6 +679,12 @@ export class Window {
     this.characterIn.replaceChildren(...options);
     this.characterIn.selectedIndex = this.current;
     this.filling = filling;
+    const n = this.characters.length;
+    this.removeCharacterItem.disabled = n <= 1;
+    this.moveUpItem.disabled = this.current === 0;
+    this.previousItem.disabled = this.current === 0;
+    this.moveDownItem.disabled = this.current === n - 1;
+    this.nextItem.disabled = this.current === n - 1;
   }
 
   /** showCharacter shows character i. */
@@ -678,6 +699,67 @@ export class Window {
     if (this.filling) return;
     const i = this.characterIn.selectedIndex;
     if (i >= 0 && i !== this.current) this.showCharacter(i);
+  }
+
+  /**
+   * appendCharacter adds c after the last character, and shows it:
+   * Character > Add Character's new one, or Duplicate's copy.
+   */
+  private appendCharacter(c: character.Character): void {
+    this.characters.push(c);
+    this.modified = true;
+    this.showCharacter(this.characters.length - 1);
+  }
+
+  /**
+   * duplicateCharacter is Character > Duplicate Character: a copy of the
+   * one shown, last. Go's save.Copy can fail and is told; save.copy
+   * can't (it throws only on a programmer's error).
+   */
+  private duplicateCharacter(): void {
+    this.appendCharacter(save.copy(this.character));
+  }
+
+  /**
+   * removeCharacter is Character > Remove Character...: the one shown,
+   * once the user says so; not the only one, since a file holds at least
+   * one. The one after it is shown, or the one before if it was last.
+   */
+  private removeCharacter(): void {
+    if (this.characters.length <= 1) return;
+    const name =
+      this.character.name === "" ? "this character" : this.character.name;
+    this.confirm("Remove " + name + " from the file?", "Remove", (ok) => {
+      if (!ok) return;
+      const i = this.current;
+      this.characters.splice(i, 1);
+      this.modified = true;
+      this.showCharacter(Math.min(i, this.characters.length - 1));
+    });
+  }
+
+  /**
+   * moveCharacter swaps the character shown with the one d after it, and
+   * it is still shown.
+   */
+  private moveCharacter(d: number): void {
+    const j = this.current + d;
+    if (j < 0 || j >= this.characters.length) return;
+    const cs = this.characters;
+    [cs[this.current], cs[j]] = [cs[j]!, cs[this.current]!];
+    this.current = j;
+    this.modified = true;
+    this.showCharacters();
+    this.showTitle();
+  }
+
+  /**
+   * stepCharacter shows the character d after the one shown, if there is
+   * one: Next and Previous, which don't wrap.
+   */
+  private stepCharacter(d: number): void {
+    const j = this.current + d;
+    if (j >= 0 && j < this.characters.length) this.showCharacter(j);
   }
 
   /** showAll shows the character again, everywhere. */

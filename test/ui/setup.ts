@@ -160,3 +160,32 @@ export function chooseIn(s: HTMLSelectElement, i: number): void {
   s.selectedIndex = i;
   s.dispatchEvent(new s.ownerDocument.defaultView!.Event("change"));
 }
+
+/**
+ * allShown says whether every number box of the sheet and the Attacks
+ * tab shows the model's number.
+ */
+export function allShown(w: Window): boolean {
+  const c = w.character;
+  const ns = [
+    c.defense,
+    c.barrier,
+    c.health,
+    c.endurance,
+    c.reserve,
+    c.tv,
+    c.abilityLevels,
+    c.weaknessLevels,
+    c.total,
+    c.points,
+    c.incorporeal,
+    c.abilityPoints,
+  ];
+  if (!ns.every((n, i) => w.numbers[i]!.shows(n))) return false;
+  return w.rows.every(
+    (r) =>
+      r.roll.shows(r.attack.roll) &&
+      r.dx.shows(r.attack.dx) &&
+      r.end.shows(r.attack.end),
+  );
+}

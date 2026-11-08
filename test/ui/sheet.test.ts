@@ -26,36 +26,15 @@ import {
   type Window,
 } from "../../src/ui/window.ts";
 import { BossDivider, type Panel } from "../../src/ui/widgets.ts";
-import { checker, chooseIn, load, newWindow, saved, typeIn } from "./setup.ts";
-
-/**
- * allShown says whether every number box of the sheet and the Attacks
- * tab shows the model's number.
- */
-function allShown(w: Window): boolean {
-  const c = w.character;
-  const ns = [
-    c.defense,
-    c.barrier,
-    c.health,
-    c.endurance,
-    c.reserve,
-    c.tv,
-    c.abilityLevels,
-    c.weaknessLevels,
-    c.total,
-    c.points,
-    c.incorporeal,
-    c.abilityPoints,
-  ];
-  if (!ns.every((n, i) => w.numbers[i]!.shows(n))) return false;
-  return w.rows.every(
-    (r) =>
-      r.roll.shows(r.attack.roll) &&
-      r.dx.shows(r.attack.dx) &&
-      r.end.shows(r.attack.end),
-  );
-}
+import {
+  allShown,
+  checker,
+  chooseIn,
+  load,
+  newWindow,
+  saved,
+  typeIn,
+} from "./setup.ts";
 
 /** choiceLabelled says whether every name in p's <select> is its item's label, with its page. */
 function choiceLabelled(p: Panel): boolean {
