@@ -331,13 +331,40 @@ button.guide-fold:not(.menu-top, .menu-item, .tab) {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  padding: 4px 10px 6px;
+}
+
+/* "Step 3 of 15" and Steps stay put, and Back, Next and Close below:
+   only the list and the step between them scroll. */
+.guide-where-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.guide-steps-button::after {
+  content: " \25B8" / "";
+}
+
+.guide-steps-button[aria-expanded="true"]::after {
+  content: " \25BE" / "";
+}
+
+.guide-scroll {
+  flex: 1;
+  min-height: 0;
   overflow: auto;
-  padding: 6px 10px;
+  margin-top: 4px;
 }
 
 .guide-steps {
   margin: 0 0 6px;
   padding-left: 2em;
+}
+
+.guide-steps[hidden] {
+  display: none;
 }
 
 /* A step's title in the list is flat, as a menu's item is, and needs
@@ -386,8 +413,9 @@ button.guide-step-button:not(.menu-top, .menu-item, .tab) {
 
 .guide-buttons {
   display: flex;
+  flex: none;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 /* What a Show me shows, for a moment (Window.showTarget). */

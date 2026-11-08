@@ -414,8 +414,12 @@ here only, and may be carried to them later (the user's decision,
   the tabs, folding to its heading line. Not a `<dialog>` (it would
   block the sheet), not a sixth tab (it would hide it), not a `blob:`
   page in a browser tab (Show me couldn't reach the sheet).
-- **One step at a time**: a numbered list of the steps to jump to,
-  **Back**, **Next** and **Close**. The step is kept while the page is
+- **One step at a time**: "Step 3 of 15" and a **Steps** button that
+  unfolds a list of the steps to jump to, folded again once one is
+  chosen and folded at first at every width (the user's decision,
+  2026-11-08, when the open list left the step's text too little
+  room); the step's text scrolls, and **Back**, **Next** and **Close**
+  stay below it. The step is kept while the page is
   open, not between visits: nothing goes into `localStorage` (the
   user's decision).
 - **Each step** says what to do on the page, in the guide's own words;
@@ -1481,7 +1485,7 @@ Done (2026-11-07):
   first release is 0.1.0 (the user's choice, 2026-11-08). The repository is private, so its releases are visible only
   to those it is shared with.
 
-## Phase 15 The guide
+## Phase 15 The guide [done]
 
 The guide of "The guide", in four steps. The release's size budget
 (256 KiB, Phase 14.1) is measured with it; raising it is the user's
@@ -1709,7 +1713,7 @@ Done (2026-11-08):
 - No new target was needed. The built page is 249,285 bytes (from
   242,731), within the 256 KiB budget.
 
-### Phase 15.4 Browsers and release
+### Phase 15.4 Browsers and release [done]
 
 `test/browser/guide.spec.ts`, in Chromium and Firefox, from `file://`
 and `http://`: Help > Guide opening and closing it; every step shown;
@@ -1718,6 +1722,44 @@ the test PDF at its page; the panel beside the sheet when wide and
 above the tabs when narrow; screenshots of both; no requests, no
 console errors. The built size recorded here, against the budget.
 README.md, "Using the page": Help > Guide and Help > About.
+
+Done (2026-11-08):
+
+- **The step list folds** behind **Steps** (the user's decision; "The
+  guide"). The screenshots showed the open list taking the whole
+  narrow band (about 240 px at 760 px wide) and, at 1280×720, leaving
+  the step's text about 300 px. Now `where` ("Step 3 of 15") and
+  **Steps** head the panel, `.guide-scroll` holds the list and the
+  step, and the buttons stay out of the scroll. **Back** and **Next**
+  leave the list as it is; choosing a step folds it and focuses the
+  step's heading. The first step now says **Steps** where it said "the
+  list above".
+- `test/browser/guide.spec.ts`, 5 tests, 20 runs with the 4 projects:
+  Help > Guide opening, hiding and closing it, the step kept between;
+  every step by **Next**, and from the unfolded list, with "Step i of
+  n" and **Next** off at the last; every **Show me** (more than 15 of
+  them, with Miho.yaml loaded and her Transformation chosen so that
+  Perks and Flaws... and Form... can take the focus), at 1280 and at
+  760 px wide, leaving its control focused, highlighted and in view,
+  on its tab or in its open menu, and the Show me itself in view, the
+  highlight gone within 3 s; the **?** for Discussion (p. 17) asking
+  for the PDF and opening the test PDF at `#page=19`; the panel at the
+  sheet's right when wide, above the tabs and at most a third of the
+  height when narrow, folding to under 40 px. No requests, no console
+  errors. Screenshots in `obj/screenshots/`: `*-guide-wide.png`,
+  `-narrow.png`, `-folded.png`, `-rulebook.png`.
+- A unit test of the fold (`test/ui/guide.test.ts`), and "Step i of
+  3" in Back and Next's.
+- Planted and caught: no focus in Show me, no tab shown for it, the
+  narrow panel after the tabs (`order: 1`), the folded CSS removed,
+  and a chosen step leaving the list open (the unit test and the spec
+  both).
+- Firefox crashed the page on `allTextContents` under a role locator
+  ("Findings"); the spec uses a CSS locator there.
+- The built page is 250,512 bytes, within the 256 KiB budget (262,144)
+  with about 11 KiB to spare; the guide added about 22 KB.
+- `make check`, `make check-guide`, `make test` (237) and `make
+  test-browser` (186 + 186) pass.
 
 ## Testing
 
@@ -1769,6 +1811,12 @@ and the browsers that ova_cg_go's design didn't have to know.
   (Phase 14.1).
 - **Playwright's WebKit doesn't run on Fedora 44**: its Ubuntu 24.04
   build needs libraries Fedora doesn't have (Phase 14.1).
+- **Playwright 1.65's Firefox (build 1572) crashes the page** ("Page
+  crashed") on `evaluateAll` or `allTextContents` of a locator chained
+  under a `getByRole` locator (Phase 15.4). A plain CSS
+  `page.locator(...)` works, and so do `.evaluate` on the role-chained
+  locator and `page.evaluate`; Chromium is fine with all of them. Use
+  a CSS locator for those calls.
 
 ## Open questions
 

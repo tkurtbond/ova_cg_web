@@ -54,6 +54,7 @@ unsaved changes.
 | Character | Move Up, Move Down | |
 | Character | Next Character, Previous Character | Alt+Shift+PgDn, Alt+Shift+PgUp |
 | Rulebook | Open, Choose PDF... | |
+| Help | Guide, About | |
 
 The menus show each item's key. A browser keeps some keys for itself
 (Ctrl+N opens a window, Ctrl+T a tab, Ctrl+PgDn and Ctrl+PgUp switch
@@ -62,6 +63,19 @@ Ctrl. There is no Quit: closing the browser tab is quitting.
 
 The dialogs open inside the page. Escape cancels or closes the one on
 top.
+
+### The guide
+
+**Help > Guide** opens a step-by-step guide to making a character,
+following the rulebook's own steps. It sits beside the sheet when the
+window is wide, and above the tabs when it is narrow, where ▾ folds it
+out of the way. It shows one step at a time: **Back** and **Next** move
+through them, and **Steps** unfolds a list of all of them to jump to
+any one. A step's **Show me** takes you to the control it is talking
+about, on its tab or in its menu, and marks it for a moment; each name
+in a step has a **?** for its page in the rulebook. **Close**, or
+**Help > Guide** again, puts it away; it opens where you left it until
+the page is closed.
 
 ### Files
 
@@ -266,7 +280,7 @@ make clean
 ```
 
 The build refuses a page larger than its budget (256 KiB, in
-`build/build.mjs`); the page is about 228 KB.
+`build/build.mjs`); the page is about 250 KB.
 
 ### Making a release
 

@@ -101,6 +101,10 @@ test("Back and Next, at the ends, and the list", () => {
       label + ": its heading",
     );
     check(p.stepButtons[i]!.textContent === title, label + ": its title");
+    check(
+      p.where.textContent === `Step ${String(i + 1)} of 3`,
+      label + ": where",
+    );
     check(p.back.disabled === (i === 0), label + ": Back");
     check(p.next.disabled === (i === 2), label + ": Next");
   };
@@ -121,6 +125,31 @@ test("Back and Next, at the ends, and the list", () => {
   p.stepButtons[1]!.click();
   at(1, "and back");
   assert.throws(() => p.showStep(3), /no step 3 of 3/);
+  done();
+});
+
+test("Steps unfolds the list, and choosing a step folds it", () => {
+  const { w, p, doc } = opened();
+  const { check, done } = checker();
+  w.openGuide();
+  const expanded = () => p.stepsButton.getAttribute("aria-expanded");
+  check(!p.listShown && p.stepList.hidden === true, "folded at first");
+  check(expanded() === "false", "Steps says so");
+  check(p.stepsButton.textContent === "Steps", "called Steps");
+  p.stepsButton.click();
+  check(p.listShown && p.stepList.hidden === false, "Steps: unfolded");
+  check(expanded() === "true", "Steps says that");
+  p.stepsButton.click();
+  check(!p.listShown, "Steps again: folded");
+  p.stepsButton.click();
+  p.stepButtons[2]!.click();
+  check(p.step === 2, "a step chosen");
+  check(!p.listShown && expanded() === "false", "and the list folded");
+  check(doc.activeElement === p.stepHeading(), "on the step's heading");
+  p.stepsButton.click();
+  p.next.click();
+  p.back.click();
+  check(p.listShown, "Back and Next leave it as it is");
   done();
 });
 

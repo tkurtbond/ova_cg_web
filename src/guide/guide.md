@@ -10,7 +10,7 @@
 
 This guide walks you through a character on this page, one step at a
 time. Keep it open while you work: **Next** and **Back** move between
-the steps, and the list above takes you to any of them.
+the steps, and **Steps** above lists them all, to jump to any one.
 
 Each name with a page beside it has a **?** that opens the rulebook
 at that page. The page can't find your copy of the PDF by itself, so

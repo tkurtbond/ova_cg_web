@@ -4,8 +4,11 @@
 // when the page is wide enough for both, else above the tabs, where it
 // folds to its heading line (style.css says where the width is).
 //
-// One step at a time: the steps' titles, a list to jump to any; the
-// step shown, its paragraphs and lists; Back, Next and Close. Every
+// One step at a time: "Step 3 of 15" and a Steps button that unfolds a
+// list of the steps' titles to jump to any (folded again once one is
+// chosen, so the step's text has the panel: the user's decision,
+// 2026-11-08); the step shown, its paragraphs and lists, which scroll;
+// and Back, Next and Close, which don't. Every
 // name with a page in it is shown as the rest of the page shows names
 // (rules.label, rules.pageLabel), with a ? opening the rulebook at that
 // page; a Show me button asks the Window to show one of its controls.
@@ -24,6 +27,12 @@ export class GuidePanel {
   readonly element: HTMLElement;
   /** The heading line's button that folds the panel when it is narrow */
   readonly fold: HTMLButtonElement;
+  /** "Step 3 of 15" */
+  readonly where: HTMLElement;
+  /** Unfolds and folds the list of steps */
+  readonly stepsButton: HTMLButtonElement;
+  /** The list of the steps' titles, folded at first */
+  readonly stepList: HTMLElement;
   /** The steps' titles, each a button showing its step */
   readonly stepButtons: HTMLButtonElement[] = [];
   /** The step shown */
@@ -70,13 +79,29 @@ export class GuidePanel {
     const head = el(doc, "div", "guide-head");
     head.append(this.fold, title);
 
+    this.where = el(doc, "span", "guide-where");
+    this.stepsButton = el(doc, "button", "guide-steps-button", "Steps");
+    this.stepsButton.type = "button";
+    this.stepsButton.setAttribute("aria-controls", "guide-steps");
+    this.stepsButton.addEventListener(
+      "click",
+      () => (this.listShown = !this.listShown),
+    );
+    const whereLine = el(doc, "div", "guide-where-line");
+    whereLine.append(this.where, el(doc, "span", "spacer"), this.stepsButton);
+
     const list = el(doc, "ol", "guide-steps");
+    list.id = "guide-steps";
     list.setAttribute("aria-label", "Steps");
     g.steps.forEach((s, i) => {
       const b = el(doc, "button", "guide-step-button");
       b.type = "button";
       b.append(...this.inlines(s.title, false));
-      b.addEventListener("click", () => this.showStep(i));
+      b.addEventListener("click", () => {
+        this.showStep(i);
+        this.listShown = false;
+        this.stepHeading().focus();
+      });
       const li = el(doc, "li");
       li.append(b);
       list.append(li);
@@ -92,12 +117,16 @@ export class GuidePanel {
     const buttons = el(doc, "div", "guide-buttons");
     buttons.append(this.back, this.next, el(doc, "span", "spacer"), this.close);
 
+    this.stepList = list;
+    const scroll = el(doc, "div", "guide-scroll");
+    scroll.append(list, this.body);
     const content = el(doc, "div", "guide-content");
     content.id = "guide-content";
-    content.append(list, this.body, buttons);
+    content.append(whereLine, scroll, buttons);
     e.append(head, content);
     this.element = e;
     this.folded = false;
+    this.listShown = false;
     this.showStep(0);
   }
 
@@ -119,6 +148,16 @@ export class GuidePanel {
     this.fold.setAttribute("aria-expanded", String(!v));
   }
 
+  /** Whether the list of steps is unfolded. */
+  get listShown(): boolean {
+    return !this.stepList.hidden;
+  }
+
+  set listShown(v: boolean) {
+    this.stepList.hidden = !v;
+    this.stepsButton.setAttribute("aria-expanded", String(v));
+  }
+
   /** showStep shows step i, its title marked in the list. */
   showStep(i: number): void {
     const n = this.guide.steps.length;
@@ -129,6 +168,7 @@ export class GuidePanel {
       if (j === i) b.setAttribute("aria-current", "step");
       else b.removeAttribute("aria-current");
     });
+    this.where.textContent = `Step ${String(i + 1)} of ${String(n)}`;
     this.back.disabled = i === 0;
     this.next.disabled = i === n - 1;
     this.body.replaceChildren(...this.stepContent(this.guide.steps[i]!));
