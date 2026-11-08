@@ -29,6 +29,7 @@ export interface Fakes {
   texts: number; // how often askText was asked,
   suggested: string; // and the text it began with last
   downloads: { name: string; text: string }[];
+  copied: string | undefined; // what copyText put on the clipboard last
   page: number; // the last page openPage was asked for
 }
 
@@ -63,6 +64,7 @@ export function newWindow(): {
     texts: 0,
     suggested: "",
     downloads: [],
+    copied: undefined,
     page: 0,
   };
   w.tell = (text) => {
@@ -97,6 +99,9 @@ export function newWindow(): {
     else then(f.typed, true);
   };
   w.download = (name, text) => f.downloads.push({ name, text });
+  w.copyText = (text) => {
+    f.copied = text;
+  };
   w.openPage = (p) => (f.page = p);
   return { w, f, doc, happy };
 }

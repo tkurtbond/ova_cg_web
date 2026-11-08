@@ -1156,7 +1156,7 @@ nothing; the title's "(N of M)"; Save writing them all, in order.
   - Cancel removing anyway;
   - Remove and Move not counted as a change.
 
-## Phase 12 The Markdown tab
+## Phase 12 The Markdown tab [done]
 
 The sheet in a read-only, selectable, monospaced `<pre>`, refreshed
 after every change; **Copy** (`navigator.clipboard.writeText`, with a
@@ -1164,6 +1164,72 @@ fallback for a page on `file://` where the browser refuses it: find
 out which do); **Save Markdown...** downloading `NAME.md`; **Inline**
 showing the paragraph and suggesting `NAME-inline.md`. `test/ui/
 markdown.test.ts` from `ui`'s `markdown_test.go`, with its labels.
+
+### Phase 12: decisions and findings
+
+- `src/ui/markdowntab.ts`'s `MarkdownView` ports ova_cg_go's
+  `MarkdownView`: `sheet`, `text` (the `<pre>`, labelled "Markdown
+  sheet"), `copy`, `save` and the `inline` checkbox; `show(c)`. The
+  Window calls `markdown.show` where Go does: at the end of `changed`,
+  `textChanged` and `showAll` (so also on opening a file, New, and
+  stepping between characters).
+- **The clipboard on `file://`**, seen with throwaway pages under
+  Playwright, headless, after a click:
+  - Firefox 159 takes `navigator.clipboard.writeText`, and `readText`
+    gives the text back.
+  - Chromium 158 refuses it (`NotAllowedError`, "Write permission
+    denied"). The fallback works there: a hidden `<textarea>` holding
+    the text, focused and selected, and `document.execCommand("copy")`,
+    which returns true and fires a `copy` event with the text selected.
+    Playwright can't read Chromium's clipboard back, so the `copy`
+    event is the evidence.
+  - So `copyToClipboard` tries `writeText`, falls back to the selection
+    when refused (or when there is no clipboard API), and, if both
+    fail, tells the user to select the sheet and copy it (`CantCopy`).
+    Copy goes through a new Window function field, `copyText`, which
+    the tests replace (`Fakes.copied`).
+- **Save Markdown...** asks for the name with `askText` ("Save the
+  sheet as:"), as Save As... does, and downloads. It suggests `NAME.md`,
+  or `NAME-inline.md` with Inline checked, or nothing for a character
+  with no name, as Go does. `markdownName` is `fileName`'s counterpart:
+  trimmed, a directory's `/` or `\` made `_`, `.md` added unless the
+  name ends in `.md` or `.markdown`. An empty name is told "The file
+  needs a name."; a cancel saves and says nothing. Saving doesn't mark
+  the character changed. A download of a name ending in `.md` is a
+  `text/markdown` Blob, otherwise `application/yaml`.
+- `test/ui/markdown.test.ts` ports `TestMarkdown` with its labels.
+  Go's "a file that can't be written" has no counterpart, since a
+  download can't fail that way. The page's own checks:
+  - an empty name;
+  - a `.markdown` name with a directory;
+  - Copy with Inline checked copying the paragraph (a plant that copied
+    the sheet passed Go's sequence);
+  - the tab following Next and Previous, a tagline and an overridden
+    number, with Inline and stepping no change;
+  - `markdownName`;
+  - `copyToClipboard`'s three ways, with the browser's parts replaced.
+    happy-dom's `select()` doesn't focus the `<textarea>` (Chromium's
+    did), so the fallback focuses it first.
+- `test/browser/markdown.spec.ts` (Chromium and Firefox, headless):
+  - the sheet monospaced and byte for byte `test/golden/Ai.md`;
+  - Copy reaching the clipboard, read back in Firefox and seen by the
+    `copy` event in Chromium, with no message and the buffer gone;
+  - Save Markdown... suggesting and downloading `Ai.md`;
+  - Inline showing and downloading `Ai-inline.md`, byte for byte
+    `test/golden/Ai.inline.md`;
+  - no requests;
+  - a screenshot.
+- Planted, failing:
+  - `textChanged`, `changed` or `showAll` not showing the tab;
+  - the inline suggestion without `-inline`;
+  - Save marking the character changed;
+  - Inline ignored;
+  - a cancel telling the user something;
+  - no fallback (in the unit tests, and in the browser test in
+    Chromium, while Firefox still passes);
+  - the buffer left on the page;
+  - Copy copying the sheet when Inline is checked;
+  - the name not kept.
 
 ## Phase 13 The rulebook
 

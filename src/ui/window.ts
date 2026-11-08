@@ -36,9 +36,10 @@
 // form shows the sheet as the form's, or not; Character > Limits... is
 // settings.ts's dialog.
 //
-// The Background and Fluff tabs are background.ts's. The Markdown tab
-// is empty until its phase, and a menu item whose phase hasn't come has
-// no action and stays disabled (PLAN.md, "Build order").
+// The Background and Fluff tabs are background.ts's, the Markdown tab
+// markdowntab.ts's, shown again after every change. A menu item whose
+// phase hasn't come has no action and stays disabled (PLAN.md, "Build
+// order").
 
 import * as calc from "../core/calc.ts";
 import * as character from "../core/character.ts";
@@ -48,6 +49,7 @@ import * as save from "../core/save.ts";
 import { AttackDialog } from "./attack.ts";
 import { Background } from "./background.ts";
 import { LinkedDialog } from "./linked.ts";
+import { CantCopy, copyToClipboard, MarkdownView } from "./markdowntab.ts";
 import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
@@ -272,6 +274,8 @@ export class Window {
   private wasModified = false;
   /** The Background and Fluff tabs */
   readonly background: Background;
+  /** The Markdown tab */
+  readonly markdown: MarkdownView;
 
   /**
    * The file's characters, in order, and the one shown,
@@ -291,9 +295,9 @@ export class Window {
    * naming the button that does it; chooseFile asks for a file of the
    * types accept names, calling then only if one is chosen; askText
    * asks for a line of text, showing text to begin with (ok false:
-   * cancelled); download
-   * hands text to the browser as the file name; openPage opens the
-   * rulebook at a printed page.
+   * cancelled); download hands text to the browser as the file name;
+   * copyText puts text on the clipboard; openPage opens the rulebook at
+   * a printed page.
    */
   tell: (text: string) => void;
   ask: (question: string, answer: (a: Answer) => void) => void;
@@ -305,6 +309,7 @@ export class Window {
     then: (text: string, ok: boolean) => void,
   ) => void;
   download: (name: string, text: string) => void;
+  copyText: (text: string) => void;
   openPage: (page: number) => void;
 
   /** The fields being set from the character: no change to report. */
@@ -323,6 +328,8 @@ export class Window {
     this.askText = (p, text, then) => d.askText(p, text, then);
     this.chooseFile = (accept, then) => this.fileDialog(accept, then);
     this.download = (name, text) => this.downloadText(name, text);
+    this.copyText = (text) =>
+      copyToClipboard(doc, text, () => this.tell(CantCopy));
     this.openPage = () => {}; // Phase 13: the rulebook
 
     const item = (label: string, key?: Key, action?: () => void) =>
@@ -569,6 +576,10 @@ export class Window {
     this.panels[2]!.append(this.background.element);
     this.panels[3]!.append(this.background.fluff);
 
+    // ---- The Markdown tab ----
+    this.markdown = new MarkdownView(doc, this);
+    this.panels[4]!.append(this.markdown.element);
+
     doc.addEventListener("keydown", (e) => this.key(e));
     doc.addEventListener("dragover", (e) => this.dragOver(e));
     doc.addEventListener("drop", (e) => this.drop(e));
@@ -780,6 +791,7 @@ export class Window {
     this.background.show();
     this.showCharacters();
     this.showTitle();
+    this.markdown.show(c);
   }
 
   /**
@@ -872,12 +884,14 @@ export class Window {
     this.modified = true;
     this.showTitle();
     this.showNumbers();
+    this.markdown.show(this.character);
   }
 
   /** textChanged follows a change of text alone: nothing to compute. */
   textChanged(): void {
     this.modified = true;
     this.showTitle();
+    this.markdown.show(this.character);
   }
 
   /** numberChanged follows a number box's text taken; refused text is said so. */
@@ -1302,7 +1316,11 @@ export class Window {
     const view = this.doc.defaultView;
     if (view === null) throw new Error("the document has no window");
     const url = view.URL.createObjectURL(
-      new view.Blob([text], { type: "application/yaml" }),
+      new view.Blob([text], {
+        type: /\.(md|markdown)$/i.test(name)
+          ? "text/markdown"
+          : "application/yaml",
+      }),
     );
     const a = this.doc.createElement("a");
     a.href = url;

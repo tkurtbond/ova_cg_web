@@ -709,3 +709,32 @@ textarea.note-text {
   gap: 4px;
   min-height: 160px;
 }
+
+/* ---- The Markdown tab ---- */
+
+.markdown-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.markdown-sheet {
+  margin: 0;
+  padding: 6px 8px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--entry);
+  color: var(--black);
+  border: 1px solid;
+  border-color: var(--black) var(--light) var(--light) var(--black);
+  user-select: text;
+}
+
+/* copyToClipboard's fallback: selected, off the page. */
+.copy-buffer {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  opacity: 0;
+}
