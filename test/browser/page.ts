@@ -1,12 +1,22 @@
-// What every browser test needs: the built page's file:// URL, and a
-// record of what the page asked the network for (blob: and data: URLs
-// aside) and said on its console.
+// What every browser test needs: the built page's URL, and a record of
+// what the page asked the network for (blob: and data: URLs aside) and
+// said on its console.
 
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import type { Page } from "@playwright/test";
 
-export const PAGE_URL = pathToFileURL(resolve("dist/ova_cg_web.html")).href;
+/** The port test/browser/serve.ts serves the page on. */
+export const HTTP_PORT = 8713;
+
+/**
+ * The page: from file://, or, when OVA_HTTP is set, from the local
+ * server playwright.config.ts starts (test/browser/serve.ts).
+ */
+export const PAGE_URL =
+  process.env.OVA_HTTP === undefined
+    ? pathToFileURL(resolve("dist/ova_cg_web.html")).href
+    : `http://127.0.0.1:${HTTP_PORT}/ova_cg_web.html`;
 
 export interface Watch {
   requests: string[];

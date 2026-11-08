@@ -4,12 +4,31 @@
 //   node build/build.mjs           the release: minified, no source map
 //   node build/build.mjs --debug   not minified, an inline source map
 
+import { execFileSync } from "node:child_process";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
 import { inlinePage } from "./inline.mjs";
 
 const debug = process.argv.includes("--debug");
 const out = "dist/ova_cg_web.html";
+// The release's size budget (PLAN.md, Phase 14.1): 227,812 bytes when
+// it was set, the yaml library 97 KB of it. A release over it fails
+// the build, so growth is a decision, not an accident.
+const budget = 256 * 1024;
+
+// Which build this is (src/ui/version.ts): package.json's version, and
+// the commit, with "+" if the tree has changes it doesn't record.
+const { version } = JSON.parse(await readFile("package.json", "utf8"));
+/** @param {string[]} args */
+const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
+let commit = "";
+try {
+  commit = git("rev-parse", "--short=12", "HEAD");
+  if (git("status", "--porcelain", "--untracked-files=no") !== "")
+    commit += "+";
+} catch {
+  commit = "unknown";
+}
 
 const result = await build({
   entryPoints: ["src/main.ts"],
@@ -24,6 +43,10 @@ const result = await build({
   legalComments: "eof",
   charset: "utf8",
   logLevel: "warning",
+  define: {
+    OVA_VERSION: JSON.stringify(version),
+    OVA_COMMIT: JSON.stringify(commit),
+  },
 });
 const js = result.outputFiles[0]?.text;
 if (js === undefined) throw new Error("esbuild wrote no script");
@@ -34,4 +57,9 @@ const [html, css] = await Promise.all([
 ]);
 await mkdir("dist", { recursive: true });
 await writeFile(out, inlinePage(html, css, js));
-console.log(`${out}: ${Buffer.byteLength(await readFile(out))} bytes`);
+const size = Buffer.byteLength(await readFile(out));
+console.log(`${out}: ${size} bytes`);
+if (!debug && size > budget) {
+  console.error(`${out}: over its budget of ${budget} bytes (build/build.mjs)`);
+  process.exit(1);
+}

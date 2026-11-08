@@ -10,6 +10,10 @@
       content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src blob: data:"
     />
     <title>OVA Character Generator</title>
+    <!-- An empty icon of its own, so a browser doesn't ask a server for
+         /favicon.ico, which the policy above refuses: Firefox 159 did,
+         from http://, and reported the refusal as an error. -->
+    <link rel="icon" href="data:," />
     <!-- STYLE -->
   </head>
   <body>

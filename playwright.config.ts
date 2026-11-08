@@ -8,10 +8,22 @@
 // Playwright turns off (both seen in Phase 13).
 
 import { defineConfig, devices } from "@playwright/test";
+import { HTTP_PORT } from "./test/browser/page.ts";
+
+// OVA_HTTP set: the same tests with the page from a local http://
+// server (make test-browser runs both; PLAN.md, Phase 14.1).
+const http = process.env.OVA_HTTP !== undefined;
 
 export default defineConfig({
   testDir: "test/browser",
-  outputDir: "obj/playwright",
+  outputDir: http ? "obj/playwright-http" : "obj/playwright",
+  webServer: http
+    ? {
+        command: `node test/browser/serve.ts ${HTTP_PORT}`,
+        url: `http://127.0.0.1:${HTTP_PORT}/ova_cg_web.html`,
+        reuseExistingServer: false,
+      }
+    : undefined,
   forbidOnly: true,
   reporter: "list",
   use: { headless: true },

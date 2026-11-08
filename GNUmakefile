@@ -17,7 +17,7 @@ OVA_FMT_PO ?= $(HOME)/Repos/RPG/Tools/ova_fmt_po/ova_fmt_po
 OVA_CG_GO ?= $(HOME)/Repos/RPG/Tools/ova_cg_go
 GO        ?= go
 
-.PHONY: all build debug test test-browser check check-pages golden clean
+.PHONY: all build debug test test-browser check check-pages golden version release clean
 .NOTPARALLEL:
 
 all: build
@@ -45,10 +45,14 @@ test: node_modules | obj
 	  echo "== files.sh"; test/files.sh $(OVA_FMT_PO) || status=1; fi; \
 	exit $$status
 
-# The built page in headless Chromium and Firefox (Playwright). Needs
-# the browsers once: npx playwright install chromium firefox.
+# The built page in headless Chromium and Firefox (Playwright), from
+# file:// and then from a local http:// server (test/browser/serve.ts).
+# Needs the browsers once: npx playwright install chromium firefox.
 test-browser: build | obj
-	$(NPM) run -s test:browser
+	@status=0; \
+	echo "== file://"; $(NPM) run -s test:browser || status=1; \
+	echo "== http://"; OVA_HTTP=1 $(NPM) run -s test:browser || status=1; \
+	exit $$status
 
 check: node_modules
 	$(NPM) run -s check
@@ -77,6 +81,35 @@ golden:
 	@{ echo "ova_cg_go $$(git -C $(OVA_CG_GO) rev-parse HEAD)$$(git -C $(OVA_CG_GO) diff --quiet HEAD -- internal testdata || echo ' (with uncommitted changes)')"; \
 	   echo "made by: make golden, $$(date +%F)"; } > test/golden/SOURCE
 	@echo "test/golden: $$(ls test/golden | wc -l) files"
+
+# The version, for the next release: make version V=X.Y.Z sets it in
+# package.json and package-lock.json. It neither commits nor tags.
+version:
+	@[[ "$(V)" =~ ^[0-9]+\.[0-9]+\.[0-9]+$$ ]] || \
+	  { echo "version: give V=X.Y.Z (now $(VERSION))"; exit 1; }
+	$(NPM) version --no-git-tag-version $(V)
+
+# A release (PLAN.md, Phase 14.3): the page built from a committed,
+# pushed tree and attached to a GitHub release tagged vVERSION
+# (package.json's version), which gh creates. Refuses a tree with
+# uncommitted changes, a version already tagged here or on origin, and
+# a commit not on origin/main. Run make check test test-browser first.
+# GH=echo shows the gh command without running it.
+GH      ?= gh
+VERSION  = $(shell $(NODE) -p 'require("./package.json").version')
+release: node_modules
+	@test -z "$$(git status --porcelain --untracked-files=no)" || \
+	  { echo "release: the tree has uncommitted changes"; exit 1; }
+	@git fetch -q --tags origin
+	@! git rev-parse -q --verify "refs/tags/v$(VERSION)" >/dev/null || \
+	  { echo "release: v$(VERSION) is already tagged: set a new version"; exit 1; }
+	@git merge-base --is-ancestor HEAD origin/main || \
+	  { echo "release: HEAD isn't on origin/main: push first"; exit 1; }
+	$(NPM) run -s build
+	$(GH) release create "v$(VERSION)" $(PAGE) \
+	  --target "$$(git rev-parse HEAD)" \
+	  --title "ova_cg_web $(VERSION)" \
+	  --notes "The OVA character generator in one web page: download ova_cg_web.html and open it in Firefox or a Chromium-based browser. Built from $$(git rev-parse --short=12 HEAD)."
 
 clean:
 	rm -rf obj dist test-results playwright-report

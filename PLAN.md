@@ -282,7 +282,8 @@ as Go's `cwd` falls back to when `os.Getwd` fails.
 (2026-11-07): every feature, in both, from `file://`. Every browser
 test runs in both, and a feature that only one supports isn't used
 (or has a fallback that works in the other). Safari (WebKit) is best
-effort: tried in Phase 14.1, not required.
+effort: tried in Phase 14.1, not required (it wouldn't run on Fedora
+44, so isn't tested).
 
 ### Files in the browser
 
@@ -1308,9 +1309,9 @@ reuses the tab. Record what each browser does under "Findings".
     Firefox keeps the first PDF); the tab not named (both open a tab
     each time).
 
-## Phase 14 Release
+## Phase 14 Release [done]
 
-### Phase 14.1 Browsers and size
+### Phase 14.1 Browsers and size [done]
 
 The Playwright suite in Chromium and Firefox (required) and WebKit
 (best effort, "Browsers"), from `file://` and from a local `http://`
@@ -1318,17 +1319,96 @@ server; the built file's size recorded
 here and a budget set; no network request, no console error, on every
 fixture.
 
-### Phase 14.2 The user guide
+Done (2026-11-07):
+
+- **`http://`**: `test/browser/serve.ts` serves `dist/ova_cg_web.html`
+  (and nothing else, 404) at `http://127.0.0.1:8713/ova_cg_web.html`.
+  With `OVA_HTTP` set, `test/browser/page.ts`'s `PAGE_URL` is that URL
+  and `playwright.config.ts` starts the server (`webServer`) and writes
+  to `obj/playwright-http`. `make test-browser` runs the whole suite
+  twice, from `file://` and from `http://`, in both browsers.
+- **Finding: Firefox 159, from `http://`, asks for `/favicon.ico`**,
+  which the CSP refuses with a console error that failed every Firefox
+  test; from `file://` it asks for none, and Chromium 158 asks for none
+  either way. `src/index.html` now has `<link rel="icon" href="data:,">`,
+  an empty icon, and Firefox asks for nothing.
+- **Every fixture**: `test/browser/fixtures.spec.ts` opens each of
+  `testdata/*.yaml` (57; a check that there are more than 50 catches a
+  glob gone wrong), in both browsers, from both URLs. Each must open,
+  except `Broken.yaml`, which must be refused with a message; a dialog
+  of notices (Acacia, Escaping, Group, Nazo, Unsorted, Vehicle,
+  defense-best-differs: overrides found) must say something, and is
+  closed. Then every character in the file is shown in turn, with the
+  title saying which, and every tab is clicked and shown. The title
+  must not end in ` *` (opening and looking are no change); no request,
+  no console error. Planted, failing: a throw in `MarkdownView.show`
+  for one character of `two-documents.yaml` failed that fixture in
+  both browsers.
+- **WebKit: not run.** Playwright 1.65's WebKit for Linux is built for
+  Ubuntu 24.04; `npx playwright install webkit` (the user's go-ahead)
+  falls back to it on Fedora 44, and it won't start there: it needs
+  `libicu*.so.74` (Fedora has ICU 77), `libjpeg.so.8` (Fedora's
+  libjpeg-turbo gives `.so.62`), `libjxl.so.0.8`, `libbacktrace.so.0`
+  and `libWPEWebKit-2.0.so.1`, none of which Fedora packages. Recorded
+  and skipped (the user's decision, 2026-11-07); Safari stays
+  untested. The download is in `~/.cache/ms-playwright/webkit-2388`.
+- **The size**, release build, 2026-11-07: 227,953 bytes (70,844
+  gzipped with `-9`). Of the minified script, the `yaml` library is
+  97,445 bytes, `src/core` 52,368 and `src/ui` 64,626; the CSS is
+  12,363. The debug build (`make debug`, unminified, with source maps)
+  is 1,697,233. **The budget is 256 KiB** (`budget` in
+  `build/build.mjs`): a release build larger than that fails the build.
+  Planted, failing: a budget of 200 KiB failed `make`.
+
+### Phase 14.2 The user guide [done]
 
 README.md: what the page is, how to get and open it, ova_cg_po's
 user guide adapted (the menus and their keys, the tabs, files as
 downloads, the rulebook, the portrait), and how to build it.
 
-### Phase 14.3 Distribution
+Done (2026-11-07): ova_cg_go's README "Using the window", adapted:
+the keys the page uses in place of the browsers' (Alt+Shift), no Quit,
+files as downloads and where they go, the portrait as a path with the
+image chosen, the rulebook as a PDF chosen for the session and shown
+in the browser's viewer, and no Viewer.... Escape closes a dialog even
+from a text field, as `dialogs.ts` does (ova_cg_go's README says
+otherwise of its own window).
 
-How users get the file (open question: a GitHub release asset, GitHub
-Pages, or both), and a version and the build's commit shown in the
-page (Help > About, or the title line's tooltip).
+### Phase 14.3 Distribution [done]
+
+How users get the file (~~open question: a GitHub release asset,
+GitHub Pages, or both~~ a release asset, the user's decision,
+2026-11-07), and a version and the build's commit shown in the page
+(the title line's tooltip).
+
+Done (2026-11-07):
+
+- **The version and commit.** `build/build.mjs` reads the version from
+  `package.json` and the commit from `git rev-parse --short=12 HEAD`,
+  with `+` after it when tracked files have uncommitted changes
+  (`unknown` without git), and gives them to esbuild as `define`s,
+  `OVA_VERSION` and `OVA_COMMIT`. `src/ui/version.ts` reads them
+  (`dev` and none when not built, as under the unit tests), and the
+  title line's `title` is `about()`: `ova_cg_web 0.0.0, built from
+  ba692e3abcde`. `test/ui/version.test.ts` checks the unbuilt values;
+  `test/browser/build.spec.ts` checks the built page's tooltip against
+  `package.json` and a 12-digit commit.
+- **`make release`** refuses a tree with uncommitted (tracked)
+  changes, a version already tagged (after `git fetch --tags origin`,
+  so a tag on GitHub counts) and a HEAD not on `origin/main`; then
+  builds the page and runs `gh release create vVERSION
+  dist/ova_cg_web.html --target HEAD`, which makes the tag on GitHub.
+  `GH=echo` shows the command instead. Tried in a scratch clone with a
+  local bare repository as origin and `GH=echo`: each refusal, and the
+  command for a clean, pushed, untagged tree. README.md, "Making a
+  release", gives the steps. The version is set with `make version
+  V=X.Y.Z`, which refuses anything else and runs `npm version
+  --no-git-tag-version` (tried on copies: an empty, two-part,
+  `v`-prefixed and pre-release version refused; 0.1.0 set in both
+  files; the same again refused by npm); it is still 0.0.0, and the
+  first release's
+  number is the user's to choose. The repository is private, so its releases are
+  visible only to those it is shared with.
 
 ## Testing
 
@@ -1336,7 +1416,9 @@ page (Help > About, or the title line's tooltip).
   `test/golden/`; `src/ui` on happy-dom; then `test/files.sh` (needs
   ova_fmt_po at `OVA_FMT_PO`).
 - `make test-browser`: the built page, headless, in Chromium and
-  Firefox, both required (and WebKit, best effort, in Phase 14).
+  Firefox, both required, from `file://` and then from `http://`
+  (`test/browser/serve.ts`). WebKit won't run on Fedora 44 (Phase
+  14.1), so isn't tested.
 - `make check-pages`: rules' pages against the PDF's headings.
 - `make check`: `tsc --noEmit` for both projects, and the linter.
 - The oracle for calculations is the sample characters; the oracle for
@@ -1369,6 +1451,12 @@ and the browsers that ova_cg_go's design didn't have to know.
   opening makes a fresh `blob:` URL. Playwright's defaults have no PDF
   viewer (the headless shell; Firefox's `pdfjs.disabled`), so the
   tests run the full Chromium build and turn pdf.js on.
+- **Firefox asks a page served over `http://` for `/favicon.ico`**
+  (159, headless; not from `file://`, and Chromium 158 never), and the
+  CSP's refusal is a console error. An empty `data:,` icon stops it
+  (Phase 14.1).
+- **Playwright's WebKit doesn't run on Fedora 44**: its Ubuntu 24.04
+  build needs libraries Fedora doesn't have (Phase 14.1).
 
 ## Open questions
 
@@ -1377,7 +1465,8 @@ and the browsers that ova_cg_go's design didn't have to know.
   after being closed unsaved? Storage on `file://` is per-browser and
   can be lost, so it would be a convenience, not saving.
 - A dark colour scheme (`prefers-color-scheme: dark`)?
-- Distribution: a GitHub release asset, GitHub Pages, or both?
+- ~~Distribution: a GitHub release asset, GitHub Pages, or both?~~ A
+  release asset (the user's decision, 2026-11-07; Phase 14.3).
 - Is a dropped file's or chosen image's name enough for the portrait,
   or should **Choose...** ask for the path as text too?
   (Phase 8 uses the name alone, as "The portrait" decides.)

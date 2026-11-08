@@ -52,6 +52,7 @@ import { Background } from "./background.ts";
 import { LinkedDialog } from "./linked.ts";
 import { CantCopy, copyToClipboard, MarkdownView } from "./markdowntab.ts";
 import { isPdf, pdfTypes, Rulebook, RulebookTab } from "./rulebook.ts";
+import { about } from "./version.ts";
 import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
@@ -422,6 +423,7 @@ export class Window {
     this.titleLine = doc.createElement("div");
     this.titleLine.className = "title-line";
     this.titleLine.setAttribute("aria-hidden", "true"); // document.title says it
+    this.titleLine.title = about(); // which build this is
 
     this.characterIn = doc.createElement("select");
     this.characterIn.className = "characters";
