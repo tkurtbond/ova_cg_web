@@ -80,6 +80,8 @@ src/core/save.ts            internal/save      (OvaSave)
 src/core/markdown.ts        internal/markdown  (OvaMarkdown, OvaCommon's Markdown)
 src/core/inline.ts          internal/markdown/inline.go (OvaInline)
 src/core/paths.ts           internal/paths     (OvaPaths): the portrait's path
+src/core/guide.ts           the guide's text parsed (the page's own; Phase 15)
+src/guide/guide.md          the guide's text
 src/ui/window.ts            the page: menus, tabs, title, files, keys
 src/ui/widgets.ts           NumberBox, Spinner, the trait list, the name menu
 src/ui/traitpanel.ts        the Abilities' and Weaknesses' panels
@@ -89,6 +91,7 @@ src/ui/background.ts        the Background and Fluff tabs
 src/ui/markdowntab.ts       the Markdown tab
 src/ui/settings.ts          the Limits dialog
 src/ui/rulebook.ts          the chosen PDF and opening it at a page
+src/ui/guide.ts             the guide's panel (Help > Guide)
 src/ui/dialogs.ts           <dialog>s: tell, ask, askText, the Escape stack
 src/main.ts                 makes the Window on the document
 test/core/*.test.ts         ports of internal/*'s tests
@@ -99,6 +102,9 @@ test/golden/                ova_cg_go's obj/files/, copied (make golden)
 testdata/                   the fixtures, copied, kept the same
 tools/listrules.ts          PAGE<TAB>NAME of every item, for make check-pages
 tools/rulebook-headings.py  copied from ova_cg_go
+tools/rulebook-sections.py  PAGE<TAB>HEADING of the sections, for make check-pages
+tools/listguide.ts          PAGE<TAB>HEADING of the guide's pages, for make check-pages
+tools/checkguide.ts         the guide against the rulebook's words, for make check-guide
 obj/                        test outputs (git ignores it)
 dist/                       the built page (git ignores it)
 ```
@@ -389,6 +395,63 @@ last state: `rules`, `calc`, `entities`, `character` and `save` are
 ported with NPC types, Boss Abilities, Witchcraft's curses, three
 Defenses, `count:` and several characters from the start, and their
 tests with them.
+
+### The guide
+
+**The page's own addition** (the user's request, 2026-11-08): a
+step-by-step guide to making an OVA character with the page, shown on
+the page itself. ova_cg_po and ova_cg_go have none; it is recorded
+here only, and may be carried to them later (the user's decision,
+2026-11-08). Built in Phase 15.
+
+- **Help > Guide**, a checkable item in a new Help menu after
+  Rulebook, opens and closes it; **Help > About** says the version and
+  commit (`about()`, now only the title line's tooltip). Neither has a
+  key (the user's decision).
+- **A panel beside the sheet, not a modal dialog**, so the user works
+  while following it: at the right of the sheet's column when the
+  viewport is wide enough for both, otherwise between the menu bar and
+  the tabs, folding to its heading line. Not a `<dialog>` (it would
+  block the sheet), not a sixth tab (it would hide it), not a `blob:`
+  page in a browser tab (Show me couldn't reach the sheet).
+- **One step at a time**: a numbered list of the steps to jump to,
+  **Back**, **Next** and **Close**. The step is kept while the page is
+  open, not between visits: nothing goes into `localStorage` (the
+  user's decision).
+- **Each step** says what to do on the page, in the guide's own words;
+  gives the rulebook's pages for it as names with their pages and a
+  **?** (`openPage`), never its text; and has a **Show me** button that
+  shows the step's tab and focuses and briefly highlights its control.
+- **The steps follow the rulebook's** (pp. 17-21): before starting
+  (the PDF, the limits agreed with the GM: Step 0, p. 17; p. 21);
+  Concept (Name, Tagline, Concept, NPC Type: Step 1, p. 17; p. 123);
+  Abilities (Step 2, p. 18); Abilities with linked content (Form...,
+  Spells..., Companion..., Vehicle..., at their items' pages);
+  Weaknesses (Step 3, p. 18); attacks and an Ability's Perks and Flaws
+  (pp. 83, 105, 106); Health, Endurance, Defense and TV, and overrides
+  (Step 4, p. 19; pp. 107, 124); the totals and warnings (p. 21);
+  finishing touches (Background, Fluff, portrait: Step 5, p. 19;
+  Fluffing, p. 20); saving, several characters, and the Markdown tab.
+- **Its source is `src/guide/guide.md`**, a subset of Markdown
+  (headings for the steps, paragraphs, lists, bold, italic, code)
+  whose references are links of the page's own schemes:
+  `[](item:NAME)` is `rules.label` of the item, `[TEXT](page:CONST)`
+  `rules.pageLabel` of TEXT and a page constant's page, with a **?**, and
+  `[Show me](show:TARGET)` a Show me button. No page number is typed
+  by hand; the pages the guide adds (17, 18, 19, 20, 23) are constants
+  in `rules.ts`, beside `LimitsPage`. Anything outside the subset is an
+  error, in the tests and the build, never shown wrong.
+- `src/core/guide.ts` (no DOM) parses it into steps and blocks;
+  `src/ui/guide.ts` makes the panel with `createElement`, never
+  `innerHTML`. `main.ts` imports the text (esbuild's `text` loader)
+  and gives it to the `Window`; the unit tests read the file.
+- **No rulebook text, checked**: `make check-guide` refuses a guide
+  sharing a run of 8 or more words with the rulebook's text (`mutool`)
+  or with `abilities.md` and `weaknesses.md`, and `make check-pages`
+  checks the steps' pages against the PDF's headings.
+- Progress shown in the steps (a tick when the character has a name,
+  an Ability, ...) is for later (the user's decision; "Open
+  questions").
 
 ## Build order
 
@@ -1418,6 +1481,137 @@ Done (2026-11-07):
   first release is 0.1.0 (the user's choice, 2026-11-08). The repository is private, so its releases are visible only
   to those it is shared with.
 
+## Phase 15 The guide
+
+The guide of "The guide", in four steps. The release's size budget
+(256 KiB, Phase 14.1) is measured with it; raising it is the user's
+decision.
+
+### Phase 15.1 The guide's source and parser [done]
+
+`src/core/guide.ts`: the subset of Markdown parsed into steps and
+blocks, and the `item:`, `page:` and `show:` links, refusing anything
+else with its line. The page constants the steps need in `rules.ts`.
+esbuild's `text` loader for `src/guide/*.md`, and `main.ts` handing
+the text to the `Window`. `test/core/guide.test.ts`: the parser on
+small texts, each refusal; on the real guide, every `item:` found by
+`rules.find`, every `page:` a known constant, every step with a title.
+`make check-guide` (the 8-word check, with `mutool`), and the steps'
+pages added to `make check-pages`. A placeholder `guide.md` of two
+steps, so the parser and panel are built against a real file.
+
+Done (2026-11-08):
+
+- **`src/core/guide.ts`**: `parse(text)` gives a `Guide` (its title,
+  and its `Step`s, each a title and `Block`s: paragraphs and lists,
+  bulleted or numbered, of `Inline` runs: text, strong, emphasis,
+  code, item, page, show), or throws `GuideError` with the line
+  (`guide.md:18: no item "Atack"`). Lines are joined with a space; an
+  item goes on in its indented lines; a blank line ends a paragraph or
+  a list. Refused: a tab, a space at a line's end, an indented line
+  outside a list item, a list mixing `-` and numbers or numbered out
+  of order, `*`, `+`, `>`, `|` and fences at a line's start, `###`,
+  text before the first step, a step with nothing in it; unclosed or
+  empty `**`, `*` and code, `**`/`*` with a space just inside (so a
+  loose `*` must be `\*`), `*` in `*` and `**` in `**`, `\` before
+  anything but ASCII punctuation, a bare `_`, `<` or `]`, a `[...]`
+  that isn't a link, a link of any other scheme (no link leaves the
+  page), formatting in a link's text, an `item:` with text or not
+  written as `rules` names it (`item:attack`), an unknown `page:`, a
+  `show:` target not lower-case words joined by `-`.
+- **`item:` takes an item's name with its parentheses**, `[](item:
+  Vehicle (Mecha))`: the destination ends at the `)` that balances.
+- **`page:` names an entry of `guide.pages`**: the constant's name in
+  `rules.ts`, its page and the heading the rulebook prints there.
+  `rules.ts` gains `DiscussionPage` and `ConceptPage` (17),
+  `AbilitiesStepPage` and `WeaknessesStepPage` (18),
+  `HealthEnduranceStepPage` and `FinishingTouchesPage` (19),
+  `FluffingPage` (20) and `SampleCharactersPage` (23, "Using the
+  Characters"); the table also lists the rule pages there before
+  (`LimitsPage`, `PerksFlawsPage`, `AffinitiesPage`, `QuickListPage`,
+  `RollsPage` "Attack!", `DamagePage`, `HealthEndurancePage`,
+  `NpcTypesPage` "Creating NPCs", `ThreatValuePage`). `SpellCostPage`
+  and `HalfCostPage` are in no section's heading (they are entries'
+  pages, which `make check-pages` already checks), so aren't offered.
+  The page is shown with `rules.pageLabel`, not `rules.pageText`
+  (which takes an item).
+- **Comments, `<!-- ... -->` on lines of their own, are taken out by
+  the build**: `build/inline.mjs` refuses a script holding `<!--`, and
+  the guide's text is a string in the script. An esbuild plugin loads
+  `src/guide/*.md` as text through `guide.stripComments`, which makes
+  each comment's lines empty, so the other lines keep their numbers.
+  The parser's own test for a comment is the regular expression
+  `/^<!-{2}/`, since the string `"<!--"` in `guide.ts` would be in the
+  script too (the first build refused both).
+- **The build parses the guide first** (`build/build.mjs` imports
+  `src/core/guide.ts`, which Node 22.22 runs by stripping types), so a
+  mistake fails `make` with its line, not the page as it opens.
+  `main.ts` imports the text (`src/guide/guide.d.ts` declares `*.md`
+  as a string) and gives `parse` of it to `new Window(doc, guide)`,
+  which keeps it (`Window.guide`) for Phase 15.2; the tests' Window has
+  none.
+- **`make check-pages`** also runs `tools/rulebook-sections.py` (each
+  heading in ChaletComprime-HongKong, the face of the chapters' 16-
+  and 13-point section headings, across the whole PDF: 286) and
+  `tools/listguide.ts` (`guide.pages`), and fails for a page the
+  sections don't have at that page: all 17 match.
+- **`make check-guide`**: `tools/checkguide.ts` reads the rulebook's
+  text from mutool on standard input (never written to disk), and
+  `abilities.md` and `weaknesses.md` (`REFERENCE_MD`), and refuses a
+  guide any of whose paragraphs, items or titles, as the page shows
+  them (an item as its label), shares a run of 8 words (lower-case,
+  letters and digits; soft hyphens and line-end hyphens joined) with
+  them. The rulebook gives some 64,000 words; a source of under 10,000
+  runs is refused as missing.
+- `test/core/guide.test.ts`: the subset parsed into its tree; each
+  refusal with its line and message; what it takes that might seem
+  not (emphasis in strong and strong in emphasis, escapes, code as
+  written, parentheses); `stripComments` keeping lines, and the real
+  guide holding no `<!--` once stripped; each entry of `pages` its
+  constant's page, once; `targets`, `plainText`, `paragraphs`; the
+  real guide parsed, every step titled.
+- Planted, failing: in the unit tests, `**` with spaces taken, an
+  item's name not checked exactly, comments' lines kept, numbering
+  not checked, lines joined with no space, an empty step taken, a
+  target's text taken for its name; a guide naming `item:Atack`
+  failing `make` and the tests; in `make check-pages`, `FluffingPage`
+  19 and a heading misspelled; in `make check-guide`, a run of the
+  rulebook's PDF and one of `abilities.md` alone (each found), and an
+  empty rulebook refused.
+- The size: 234,001 bytes, from 227,953 (the parser and the
+  placeholder).
+
+### Phase 15.2 The panel
+
+The Help menu (Guide, checkable; About); the panel at both widths,
+folding when narrow; the step list, Back, Next and Close; each step's
+names with pages and **?** buttons through `openPage`; Show me through
+a list of targets the `Window` keeps (a name, its tab, its element),
+every `show:` in the guide naming one. Escape doesn't close the panel
+(it isn't a dialog). Opening and stepping through the guide is no
+change to the character (no ` *`). `test/ui/guide.test.ts` on
+happy-dom: the menu item's check following the panel; Back and Next
+at the ends; the list jumping; the step kept when closed and opened;
+? calling `openPage` with the step's page; every target in the guide
+showing its tab and focusing its element; no change.
+
+### Phase 15.3 Writing the guide
+
+The steps of "The guide", in the guide's own words, in
+`src/guide/guide.md`, passing `make check-guide` and `make
+check-pages`; checked against the page as it is (each control a step
+names exists and is called what the page calls it).
+
+### Phase 15.4 Browsers and release
+
+`test/browser/guide.spec.ts`, in Chromium and Firefox, from `file://`
+and `http://`: Help > Guide opening and closing it; every step shown;
+every Show me showing its tab and its control focused; a **?** opening
+the test PDF at its page; the panel beside the sheet when wide and
+above the tabs when narrow; screenshots of both; no requests, no
+console errors. The built size recorded here, against the budget.
+README.md, "Using the page": Help > Guide and Help > About.
+
 ## Testing
 
 - `make test`: `src/core` under Node against `testdata/` and
@@ -1427,7 +1621,10 @@ Done (2026-11-07):
   Firefox, both required, from `file://` and then from `http://`
   (`test/browser/serve.ts`). WebKit won't run on Fedora 44 (Phase
   14.1), so isn't tested.
-- `make check-pages`: rules' pages against the PDF's headings.
+- `make check-pages`: rules' pages against the PDF's headings, and
+  the guide's against its sections' headings.
+- `make check-guide`: the guide shares no run of 8 words with the
+  rulebook.
 - `make check`: `tsc --noEmit` for both projects, and the linter.
 - The oracle for calculations is the sample characters; the oracle for
   files is ova_cg_go's saved copies and ova_fmt_po.
@@ -1478,3 +1675,6 @@ and the browsers that ova_cg_go's design didn't have to know.
 - Is a dropped file's or chosen image's name enough for the portrait,
   or should **Choose...** ask for the path as text too?
   (Phase 8 uses the name alone, as "The portrait" decides.)
+- Should the guide's steps show progress, a tick when the character
+  has what the step asks for (a name, an Ability, ...)? Later (the
+  user's decision, 2026-11-08; "The guide").

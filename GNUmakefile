@@ -17,7 +17,7 @@ OVA_FMT_PO ?= $(HOME)/Repos/RPG/Tools/ova_fmt_po/ova_fmt_po
 OVA_CG_GO ?= $(HOME)/Repos/RPG/Tools/ova_cg_go
 GO        ?= go
 
-.PHONY: all build debug test test-browser check check-pages golden version release clean
+.PHONY: all build debug test test-browser check check-pages check-guide golden version release clean
 .NOTPARALLEL:
 
 all: build
@@ -59,7 +59,8 @@ check: node_modules
 
 # Every page in src/core/rules.ts against the rulebook: the entries'
 # headings, found by their font in the PDF (tools/rulebook-headings.py,
-# which needs mutool). From Phase 1; not part of make test, which can't
+# which needs mutool); and each page the guide cites against the
+# sections' headings (tools/rulebook-sections.py). From Phase 1; not part of make test, which can't
 # count on the PDF.
 RULEBOOK ?= $(HOME)/Reference/RPG/OVA/OVA_The_Anime_Role-Playing_Game.pdf
 check-pages: node_modules | obj
@@ -68,6 +69,21 @@ check-pages: node_modules | obj
 	@if diff obj/headings.txt obj/rules.txt; then \
 	  echo "ok   - all $$(wc -l < obj/rules.txt) pages match the rulebook's headings"; \
 	else echo "FAIL - src/core/rules.ts (>) differs from the rulebook's headings (<)"; exit 1; fi
+	@tools/rulebook-sections.py $(RULEBOOK) > obj/sections.txt
+	@$(NODE) tools/listguide.ts > obj/guide-pages.txt
+	@if missing=$$(grep -Fxv -f obj/sections.txt obj/guide-pages.txt); then \
+	  echo "FAIL - src/core/guide.ts's pages not among the rulebook's section headings:"; \
+	  echo "$$missing"; exit 1; \
+	else echo "ok   - all $$(wc -l < obj/guide-pages.txt) of the guide's pages match the rulebook's section headings"; fi
+
+# The guide (src/guide/guide.md) in its own words: no run of 8 words
+# the rulebook has, in its PDF's text (piped, never written to disk) or
+# in the Markdown copies of its descriptions. Needs mutool, like
+# check-pages, and not part of make test.
+REFERENCE_MD ?= $(HOME)/Reference/RPG/OVA/abilities.md $(HOME)/Reference/RPG/OVA/weaknesses.md
+check-guide: node_modules
+	@set -o pipefail; mutool draw -q -F txt -o - $(RULEBOOK) | \
+	  $(NODE) tools/checkguide.ts src/guide/guide.md $(REFERENCE_MD)
 
 # The golden files (AGENTS.md): ova_cg_go's save and markdown tests
 # write each fixture's saved copy, sheet and inline paragraphs into its

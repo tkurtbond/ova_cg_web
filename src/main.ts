@@ -6,9 +6,11 @@
 // the console.
 
 import { Window } from "./ui/window.ts";
+import { parse } from "./core/guide.ts";
+import guideText from "./guide/guide.md";
 
 declare global {
   var ova: Window;
 }
 
-globalThis.ova = new Window(document);
+globalThis.ova = new Window(document, parse(guideText));

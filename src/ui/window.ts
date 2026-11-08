@@ -53,6 +53,7 @@ import { LinkedDialog } from "./linked.ts";
 import { CantCopy, copyToClipboard, MarkdownView } from "./markdowntab.ts";
 import { isPdf, pdfTypes, Rulebook, RulebookTab } from "./rulebook.ts";
 import { about } from "./version.ts";
+import type { Guide } from "../core/guide.ts";
 import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
@@ -291,6 +292,8 @@ export class Window {
   readonly markdown: MarkdownView;
   /** The rulebook's PDF, once chosen */
   readonly rulebook: Rulebook;
+  /** The guide (Help > Guide, Phase 15), if the page was given one */
+  readonly guide: Guide | undefined;
 
   /**
    * The file's characters, in order, and the one shown,
@@ -332,9 +335,14 @@ export class Window {
   /** The fields being set from the character: no change to report. */
   filling = false;
 
-  /** The Window on doc, in its #app, with a new character. */
-  constructor(doc: Document) {
+  /**
+   * The Window on doc, in its #app, with a new character; guide is the
+   * guide's text parsed (main.ts), which the tests leave out unless
+   * they test it.
+   */
+  constructor(doc: Document, guide?: Guide) {
     this.doc = doc;
+    this.guide = guide;
     const app = doc.getElementById("app");
     if (app === null) throw new Error("the page has no #app");
     const d = new dialogs.Dialogs(doc);

@@ -248,7 +248,9 @@ download the rulebook instead of opening it at the page.
 
 You need Node 22 or later and GNU make. For `make test`, ova_fmt_po,
 built, at `OVA_FMT_PO` (default `~/Repos/RPG/Tools/ova_fmt_po/ova_fmt_po`).
-For `make check-pages`, mutool and the rulebook's PDF.
+For `make check-pages` and `make check-guide`, mutool and the
+rulebook's PDF (and, for `check-guide`, `abilities.md` and
+`weaknesses.md`, `REFERENCE_MD`).
 
 ```sh
 npm ci               # once: the pinned dependencies
@@ -258,7 +260,8 @@ make test-browser    # the page in headless Chromium and Firefox,
                      #   from file:// and from http://127.0.0.1
                      #   (once first: npx playwright install chromium firefox)
 make check           # the type checks and prettier
-make check-pages     # the rules' pages against the rulebook's PDF
+make check-pages     # the rules' and the guide's pages against the rulebook's PDF
+make check-guide     # the guide shares no 8 words with the rulebook
 make clean
 ```
 

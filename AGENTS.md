@@ -57,7 +57,8 @@ make test            # the unit tests under Node (node --test), then
                      #   test/files.sh (needs ova_fmt_po: OVA_FMT_PO)
 make test-browser    # the built page in headless Chromium and Firefox (Playwright)
 make check           # tsc on the three projects (core, ui, tests) and prettier --check
-make check-pages     # rules' pages against the rulebook PDF (needs mutool)
+make check-pages     # rules' and the guide's pages against the rulebook PDF (needs mutool)
+make check-guide     # the guide in its own words: no 8 words of the rulebook's (needs mutool)
 make golden          # copy ova_cg_go's obj/files/ into test/golden/ (run its make test first)
 make clean           # rm -rf obj dist
 ```

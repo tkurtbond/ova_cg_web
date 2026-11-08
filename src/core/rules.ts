@@ -159,6 +159,25 @@ export const HalfCostPage = 57;
  */
 export const NpcTypesPage = 123;
 
+// The steps of Creating a Character, for the guide (src/core/guide.ts,
+// PLAN.md "The guide"): the page's own, not ova_cg_go's.
+/** Step 0: Discussion */
+export const DiscussionPage = 17;
+/** Step 1: Concept */
+export const ConceptPage = 17;
+/** Step 2: The Abilities */
+export const AbilitiesStepPage = 18;
+/** Step 3: The Weaknesses */
+export const WeaknessesStepPage = 18;
+/** Step 4: Health and Endurance */
+export const HealthEnduranceStepPage = 19;
+/** Step 5: Finishing Touches */
+export const FinishingTouchesPage = 19;
+/** Fluffing */
+export const FluffingPage = 20;
+/** Using the Characters: the sample characters */
+export const SampleCharactersPage = 23;
+
 /** An Ability, Weakness, Perk or Flaw. Read-only once made. */
 export class Item {
   readonly name: string;

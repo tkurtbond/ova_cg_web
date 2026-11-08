@@ -1,5 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": { "lib": ["ES2022", "DOM", "DOM.Iterable"], "types": [] },
-  "include": ["src/core/**/*.ts", "src/ui/**/*.ts", "src/main.ts"]
+  "include": [
+    "src/core/**/*.ts",
+    "src/ui/**/*.ts",
+    "src/guide/*.d.ts",
+    "src/main.ts"
+  ]
 }
