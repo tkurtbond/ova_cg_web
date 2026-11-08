@@ -255,6 +255,169 @@ textarea:focus-visible {
   display: none;
 }
 
+/* ---- The sheet's column, and the guide beside it ----
+
+   Narrow, the guide is a band between the menu bar and the tabs, at
+   most a third of the height, folding to its heading line; from 900 px
+   (the sheet's 544 and the guide's 22em, with room) it is a column at
+   the sheet's right, as tall as the sheet, and doesn't fold. */
+
+.work {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sheet {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.guide {
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  max-height: 33vh;
+  margin: 4px 4px 0;
+  border: 1px solid;
+  border-color: var(--light) var(--black) var(--black) var(--light);
+  min-height: 0;
+}
+
+.guide[hidden] {
+  display: none;
+}
+
+.guide-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px;
+  background: var(--selection);
+  color: var(--selected-text);
+}
+
+.guide-title {
+  font-size: inherit;
+  font-weight: bold;
+  margin: 0;
+}
+
+button.guide-fold:not(.menu-top, .menu-item, .tab) {
+  min-width: 0;
+  padding: 0 6px;
+}
+
+/* The fold's arrow is drawn: aria-expanded says it, and the empty
+   alternative text keeps it out of the button's name, the title's. */
+.guide-fold::before {
+  content: "\25BE" / "";
+}
+
+.guide.folded .guide-fold::before {
+  content: "\25B8" / "";
+}
+
+.guide.folded .guide-content {
+  display: none;
+}
+
+.guide-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  padding: 6px 10px;
+}
+
+.guide-steps {
+  margin: 0 0 6px;
+  padding-left: 2em;
+}
+
+/* A step's title in the list is flat, as a menu's item is, and needs
+   the same :not() as the raised buttons' rule to outrank it. */
+button.guide-step-button:not(.menu-top, .menu-item, .tab) {
+  border: none;
+  box-shadow: none;
+  min-width: 0;
+  background: none;
+  padding: 1px 2px;
+  text-align: left;
+}
+
+.guide-step-button[aria-current="step"] {
+  font-weight: bold;
+}
+
+.guide-step-button:focus-visible {
+  outline: 1px dotted var(--black);
+}
+
+.guide-body {
+  border-top: 1px solid var(--dark);
+  padding-top: 4px;
+}
+
+.guide-step-title {
+  font-size: inherit;
+  margin: 4px 0;
+}
+
+.guide-step-title:focus {
+  outline: none;
+}
+
+.guide-body p,
+.guide-body ul,
+.guide-body ol {
+  margin: 6px 0;
+}
+
+.guide-body ul,
+.guide-body ol {
+  padding-left: 1.5em;
+}
+
+.guide-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+/* What a Show me shows, for a moment (Window.showTarget). */
+.guide-shown {
+  outline: 3px solid #c08000 !important;
+  outline-offset: 1px !important;
+}
+
+@media (min-width: 900px) {
+  .work {
+    flex-direction: row;
+  }
+
+  .guide {
+    order: 0;
+    flex: none;
+    width: 22em;
+    max-height: none;
+    margin: 4px 4px 4px 0;
+  }
+
+  .guide-fold {
+    display: none;
+  }
+
+  .guide.folded .guide-content {
+    display: flex;
+  }
+}
+
 /* ---- Dialogs ---- */
 
 .dialog {

@@ -187,6 +187,7 @@ test("the menus: greyed until their phase, and by keyboard", () => {
       "Duplicate Character",
       "Open",
       "Choose PDF...",
+      "About",
     ],
     "a lone new character: the rest greyed until there are more, or their phase",
   );

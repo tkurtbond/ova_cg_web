@@ -9,6 +9,7 @@ import { readFileSync } from "node:fs";
 import * as save from "../../src/core/save.ts";
 import { Window as HappyWindow } from "happy-dom";
 import { Cancel, Window, type Answer } from "../../src/ui/window.ts";
+import type { Guide } from "../../src/core/guide.ts";
 
 export const DATA_DIR = "testdata/";
 
@@ -42,14 +43,15 @@ export function newDocument(): { happy: HappyWindow; doc: Document } {
   return { happy, doc: happy.document as unknown as Document };
 }
 
-export function newWindow(): {
+/** A Window with fakes, and guide's panel if it is given one. */
+export function newWindow(guide?: Guide): {
   w: Window;
   f: Fakes;
   doc: Document;
   happy: HappyWindow;
 } {
   const { happy, doc } = newDocument();
-  const w = new Window(doc);
+  const w = new Window(doc, guide);
   const f: Fakes = {
     tells: 0,
     told: "",

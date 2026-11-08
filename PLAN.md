@@ -1581,7 +1581,7 @@ Done (2026-11-08):
 - The size: 234,001 bytes, from 227,953 (the parser and the
   placeholder).
 
-### Phase 15.2 The panel
+### Phase 15.2 The panel [done]
 
 The Help menu (Guide, checkable; About); the panel at both widths,
 folding when narrow; the step list, Back, Next and Close; each step's
@@ -1594,6 +1594,85 @@ happy-dom: the menu item's check following the panel; Back and Next
 at the ends; the list jumping; the step kept when closed and opened;
 ? calling `openPage` with the step's page; every target in the guide
 showing its tab and focusing its element; no change.
+
+Done (2026-11-08):
+
+- **`src/ui/guide.ts`, `GuidePanel`**: an `<aside id="guide">`
+  labelled by its title (`h2`); a heading line with the fold button
+  (`aria-expanded`, its arrow drawn by CSS with empty alternative text,
+  as the menu's check is) and the title; an `<ol>` of the steps'
+  titles, each a flat button, the step shown marked
+  `aria-current="step"` and bold; the step (`h3`, focusable, then its
+  paragraphs and lists); Back and Next (disabled at the ends) and
+  Close. An item is its `rules.label` and a page link its
+  `rules.pageLabel`, each followed by a `HelpButton` (`?`, named "The
+  rulebook at p. N") through the Window's `openPage`; a Show me is a
+  button naming its target (`data-target`). A step's title in the list
+  shows text only, with no `?` or Show me (no button in a button); its
+  heading has them. Built with `createElement` and text nodes only.
+- **Help** is the bar's fourth menu (`HelpMenu`): **Guide**, a
+  checkable item with no key, disabled when the Window has no guide
+  (the tests' default); **About**, `tell(about())`.
+- **Opening** (`openGuide`) shows the panel at the step it was left
+  at, unfolds it, checks Guide and focuses the step's heading;
+  **closing** (`closeGuide`, Guide again or Close) hides it, unchecks
+  Guide, and, if the focus was in the panel, puts it back where it was
+  as the guide opened (else on Help). Escape does nothing to it.
+- **Targets**: `Window.targets` maps a name to its control and where
+  it is, a tab (an index into `tabNames`), a menu (an index into the
+  bar's), or neither (the characters' `<select>`): `name`, `player`,
+  `tagline`, `npc-type`, `abilities` and `weaknesses` (each panel's
+  name `<select>`), `perks-flaws`, `ability-end`, `linked`, `totals`,
+  `warnings`, `combat-notes`; `attacks` (Add attack...), `defense`,
+  `health`, `endurance`, `tv`; `background` (the summary); `portrait`
+  (Choose...) and `fluff` on the Fluff tab; `markdown` (Copy);
+  `characters`; and the menu items `save`, `limits`, `transformed`,
+  `add-character`, `choose-pdf`. Phase 15.3 adds what its steps need.
+  `showTarget` shows the tab (or opens the menu, or closes any menu),
+  focuses the control and gives it the class `guide-shown`, an outline,
+  for 1.5 s (`ShownFor`). A disabled control can't take the focus
+  (Perks and Flaws..., END and Linked... with no Ability chosen), so it
+  is only outlined. A name that isn't a target throws: it is a mistake
+  in the guide, and the test finds it first.
+- **The layout**: `#app` holds the title line, the bar and `.work`,
+  which holds `.sheet` (the tabs and their panels) and the guide. From
+  900 px wide (the sheet's 544 and the guide's 22em, with room) the
+  guide is a column at the sheet's right, as tall as it, and doesn't
+  fold (its fold button hidden); narrower, it is a band above the tabs
+  (`order: -1`), at most a third of the height, scrolling, and folds
+  to its heading line. Seen in headless Chromium and Firefox, 1280 and
+  760 px wide: at the right, 310 px wide; above the tabs, folding to
+  29-30 px; Show me focusing and outlining the Abilities' name.
+  The guide comes after the sheet in the document, so when narrow the
+  Tab key reaches the tabs before the guide above them; wide, the
+  order matches what is seen.
+- The steps' list's buttons came out raised at first: the raised
+  buttons' rule, `button:not(.menu-top, .menu-item, .tab)`, outranks a
+  class alone, so the flat rule repeats its `:not()`.
+- `test/ui/guide.test.ts` (11 tests, on a three-step guide and the
+  real one): Help's items, Guide's check following the panel, the menu
+  shut and the focus on the step's heading and back on close, opening
+  unfolding it; Back and Next at both ends and the list jumping, each
+  step's mark, heading and title; the step kept across close and open;
+  the names with their pages and each `?` calling `openPage` with its
+  page, no button in a list title; Show me showing its tab, focusing
+  and outlining; every target's tab or menu shown and its control
+  focused, the control found on that tab or in that menu in the page
+  itself (not taken from the list), the three disabled ones focused
+  once an Ability with END (Ai) and one with linked content (Miho) is
+  chosen, the outline gone after 1.6 s; every `show:` in the real guide
+  a target; Escape; no change (no ` *`); About. `test/ui/setup.ts`'s
+  `newWindow` takes the guide.
+- Planted, failing: Guide's check left on at close; Next enabled at
+  the end; the list jumping to the first step; the step reset on open;
+  `?` at the page after; a target on the wrong tab, and in the wrong
+  menu (found only once the test looked for the control on the page);
+  the guide's target missing; opening counted as a change; Escape
+  closing it; the outline kept; no focus; a button in a list title.
+  The last one's first run was stopped by the memory cap:
+  `assert.equal(node, null)` printed happy-dom's window, as AGENTS.md
+  warns, so it is `assert.ok(... === null)`.
+- The size: 242,731 bytes, from 234,001.
 
 ### Phase 15.3 Writing the guide
 

@@ -38,7 +38,9 @@
 // settings.ts's dialog.
 //
 // The Background and Fluff tabs are background.ts's, the Markdown tab
-// markdowntab.ts's, shown again after every change. A menu item whose
+// markdowntab.ts's, shown again after every change. Help > Guide shows
+// guide.ts's panel beside them (PLAN.md, "The guide"), whose Show me
+// buttons name the controls in targets; Help > About says the version. A menu item whose
 // phase hasn't come has no action and stays disabled (PLAN.md, "Build
 // order").
 
@@ -54,6 +56,7 @@ import { CantCopy, copyToClipboard, MarkdownView } from "./markdowntab.ts";
 import { isPdf, pdfTypes, Rulebook, RulebookTab } from "./rulebook.ts";
 import { about } from "./version.ts";
 import type { Guide } from "../core/guide.ts";
+import { GuidePanel } from "./guide.ts";
 import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
@@ -227,6 +230,21 @@ export const keys = {
   previous: altShift("PageUp"),
 } as const;
 
+/** The Help menu's index on the bar */
+export const HelpMenu = 3;
+
+/** How long Show me highlights its control, in ms */
+export const ShownFor = 1500;
+
+/** A control a guide's Show me shows (Window.targets) */
+export interface Target {
+  /** Its tab, an index into tabNames; undefined: above the tabs */
+  tab: number | undefined;
+  /** Its menu, an index into the bar's; undefined: not in a menu */
+  menu: number | undefined;
+  element: HTMLElement;
+}
+
 export class Window {
   readonly doc: Document;
   readonly dialogs: dialogs.Dialogs;
@@ -247,6 +265,8 @@ export class Window {
   readonly previousItem: MenuItem;
   readonly rulebookItem: MenuItem;
   readonly choosePdfItem: MenuItem;
+  readonly guideItem: MenuItem;
+  readonly aboutItem: MenuItem;
 
   /** The file's characters, by number and name; current chosen. */
   readonly characterIn: HTMLSelectElement;
@@ -292,8 +312,16 @@ export class Window {
   readonly markdown: MarkdownView;
   /** The rulebook's PDF, once chosen */
   readonly rulebook: Rulebook;
-  /** The guide (Help > Guide, Phase 15), if the page was given one */
+  /** The guide (Help > Guide), if the page was given one */
   readonly guide: Guide | undefined;
+  /** Its panel; undefined with no guide, and Help > Guide disabled */
+  readonly guidePanel: GuidePanel | undefined;
+  /**
+   * What a guide's Show me can show, by its target's name: a control,
+   * on its tab (undefined: none, it is above the tabs) or in its menu
+   * (an index into the menu bar's menus).
+   */
+  readonly targets = new Map<string, Target>();
 
   /**
    * The file's characters, in order, and the one shown,
@@ -400,6 +428,14 @@ export class Window {
     this.choosePdfItem = item("Choose PDF...", undefined, () =>
       this.chooseRulebook(() => {}),
     );
+    this.guideItem = new MenuItem(
+      doc,
+      "Guide",
+      undefined,
+      guide === undefined ? undefined : () => this.toggleGuide(),
+      true,
+    );
+    this.aboutItem = item("About", undefined, () => this.tell(about()));
     this.menu = new MenuBar(doc, [
       {
         label: "File",
@@ -426,6 +462,7 @@ export class Window {
         label: "Rulebook",
         items: [this.rulebookItem, Separator, this.choosePdfItem],
       },
+      { label: "Help", items: [this.guideItem, this.aboutItem] },
     ]);
 
     this.titleLine = doc.createElement("div");
@@ -467,7 +504,23 @@ export class Window {
       this.panels.push(p);
     });
 
-    app.replaceChildren(this.titleLine, bar, tablist, panels);
+    // The sheet's column, and the guide beside it (style.css: at its
+    // right when wide, above the tabs when narrow).
+    const sheet = el(doc, "div", "sheet");
+    sheet.append(tablist, panels);
+    const work = el(doc, "div", "work");
+    work.append(sheet);
+    if (guide !== undefined) {
+      this.guidePanel = new GuidePanel(
+        doc,
+        guide,
+        (page) => this.openPage(page),
+        (target) => this.showTarget(target),
+      );
+      this.guidePanel.onClose = () => this.closeGuide();
+      work.append(this.guidePanel.element);
+    }
+    app.replaceChildren(this.titleLine, bar, work);
 
     // ---- The Character and Attacks tabs (Go's buildSheetTabs) ----
     const openPage = (page: number): void => this.openPage(page);
@@ -612,6 +665,8 @@ export class Window {
     this.markdown = new MarkdownView(doc, this);
     this.panels[4]!.append(this.markdown.element);
 
+    this.addTargets();
+
     doc.addEventListener("keydown", (e) => this.key(e));
     doc.addEventListener("dragover", (e) => this.dragOver(e));
     doc.addEventListener("drop", (e) => this.drop(e));
@@ -633,6 +688,115 @@ export class Window {
     if (this.modified) t += " *";
     this.doc.title = t;
     this.titleLine.textContent = t;
+  }
+
+  // ---- The guide ----
+
+  /** Help > Guide: the guide's panel shown, or hidden. */
+  toggleGuide(): void {
+    if (this.guidePanel?.open === true) this.closeGuide();
+    else this.openGuide();
+  }
+
+  /**
+   * openGuide shows the guide at the step it was left at, unfolded, its
+   * heading focused; back is where the focus goes again when it closes.
+   */
+  openGuide(): void {
+    const g = this.guidePanel;
+    if (g === undefined) return;
+    if (!g.open) this.guideBack = this.doc.activeElement;
+    g.element.hidden = false;
+    g.folded = false;
+    this.guideItem.checked = true;
+    g.stepHeading().focus();
+  }
+
+  /** closeGuide hides the guide; a focus in it goes back where it was. */
+  closeGuide(): void {
+    const g = this.guidePanel;
+    if (g === undefined || !g.open) return;
+    const inside = g.element.contains(this.doc.activeElement);
+    g.element.hidden = true;
+    this.guideItem.checked = false;
+    const b = this.guideBack;
+    this.guideBack = null;
+    if (!inside) return;
+    if (b !== null && b.isConnected && "focus" in b && b !== this.doc.body) {
+      (b as HTMLElement).focus();
+    } else {
+      this.menu.top(HelpMenu).focus();
+    }
+  }
+
+  /** Where the focus was as the guide opened */
+  private guideBack: Element | null = null;
+
+  /**
+   * addTargets lists the controls a guide's Show me can show (PLAN.md,
+   * "The guide"); test/ui/guide.test.ts checks every show: in the guide
+   * names one.
+   */
+  private addTargets(): void {
+    const on = (name: string, tab: number, element: HTMLElement) =>
+      this.targets.set(name, { tab, menu: undefined, element });
+    const inMenu = (name: string, menu: number, it: MenuItem) =>
+      this.targets.set(name, { tab: undefined, menu, element: it.button });
+    const bg = this.background;
+    on("name", 0, this.nameIn);
+    on("player", 0, this.playerIn);
+    on("tagline", 0, this.taglineIn);
+    on("npc-type", 0, this.npcTypeIn);
+    on("abilities", 0, this.abilities.choice);
+    on("weaknesses", 0, this.weaknesses.choice);
+    on("perks-flaws", 0, this.abilityMods);
+    on("ability-end", 0, this.abilityEnd.entry);
+    on("linked", 0, this.abilityLinked);
+    on("totals", 0, this.numbers[Total]!.entry);
+    on("warnings", 0, this.warnings.element);
+    on("combat-notes", 0, this.combatNotes);
+    on("attacks", 1, this.addAttack);
+    on("defense", 1, this.numbers[Defense]!.entry);
+    on("health", 1, this.numbers[Health]!.entry);
+    on("endurance", 1, this.numbers[Endurance]!.entry);
+    on("tv", 1, this.numbers[TV]!.entry);
+    on("background", 2, bg.summaryIn);
+    on("portrait", 3, bg.choosePortrait);
+    on("fluff", 3, bg.fluffIn[0]!);
+    on("markdown", 4, this.markdown.copy);
+    this.targets.set("characters", {
+      tab: undefined,
+      menu: undefined,
+      element: this.characterIn,
+    });
+    inMenu("save", 0, this.saveItem);
+    inMenu("limits", 1, this.limitsItem);
+    inMenu("transformed", 1, this.transformedItem);
+    inMenu("add-character", 1, this.addCharacterItem);
+    inMenu("choose-pdf", 2, this.choosePdfItem);
+  }
+
+  /**
+   * showTarget shows the control a Show me names: its tab, or its menu
+   * opened, then the control focused (unless it is disabled, when it
+   * can't be) and highlighted for a moment. A name the Window doesn't
+   * have is a mistake in the guide, which its test finds.
+   */
+  showTarget(name: string): void {
+    const t = this.targets.get(name);
+    if (t === undefined)
+      throw new Error(`the guide shows "${name}", which isn't a target`);
+    if (t.tab !== undefined) this.showTab(t.tab);
+    if (t.menu !== undefined) this.menu.open(t.menu, "none");
+    else this.menu.close(false);
+    t.element.focus();
+    const e = t.element;
+    e.classList.remove("guide-shown");
+    e.classList.add("guide-shown");
+    this.doc.defaultView?.setTimeout(
+      () => e.classList.remove("guide-shown"),
+      ShownFor,
+    );
   }
 
   // ---- Tabs ----

@@ -1,5 +1,6 @@
 // The menu bar: File, Character and Rulebook, as ova_cg_po's FLTK
-// Menu_Bar and ova_cg_go's fyne.MainMenu have them, made of buttons with
+// Menu_Bar and ova_cg_go's fyne.MainMenu have them, and the page's own
+// Help (PLAN.md, "The guide"), made of buttons with
 // the WAI-ARIA menubar roles. A mouse opens a menu with a click, and
 // another by moving over it while one is open; the keyboard reaches the
 // bar with Tab (one of its menus' buttons is in the tab order), moves
