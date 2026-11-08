@@ -185,6 +185,8 @@ test("the menus: greyed until their phase, and by keyboard", () => {
       "Transformed form",
       "Add Character",
       "Duplicate Character",
+      "Open",
+      "Choose PDF...",
     ],
     "a lone new character: the rest greyed until there are more, or their phase",
   );
@@ -222,10 +224,7 @@ test("the menus: greyed until their phase, and by keyboard", () => {
   press(doc, { key: "ArrowRight" });
   checks([
     [w.menu.current === 2, "Right: Rulebook open"],
-    [
-      doc.activeElement === tops[2],
-      "Rulebook has no item to go to: on its name",
-    ],
+    [doc.activeElement === w.rulebookItem.button, "on its first item, Open"],
     [
       tops[2]!.tabIndex === 0 && tops[0]!.tabIndex === -1,
       "and it's the one in the tab order",
@@ -245,10 +244,10 @@ test("the menus: greyed until their phase, and by keyboard", () => {
   assert.equal(w.menu.current, 0, "a click opens File");
   w.newItem.button.click();
   assert.equal(w.menu.current, -1, "an item chosen shuts the menu");
-  tops[2]!.click();
-  w.rulebookItem.button.click();
-  assert.equal(w.menu.current, 2, "a disabled item does nothing");
-  tops[2]!.click();
+  tops[1]!.click();
+  w.removeCharacterItem.button.click();
+  assert.equal(w.menu.current, 1, "a disabled item does nothing");
+  tops[1]!.click();
   assert.equal(w.menu.current, -1, "a second click shuts it");
 });
 

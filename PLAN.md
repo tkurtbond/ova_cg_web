@@ -314,9 +314,10 @@ effort: tried in Phase 14.1, not required.
 - The choice is lost when the page is closed: a page can't keep a path
   to a local file. **Viewer...** has no counterpart, and spawn, viewer
   and prefs aren't ported.
-- Whether each browser honours `#page=` on a Blob URL, and whether a
+- ~~Whether each browser honours `#page=` on a Blob URL, and whether a
   second **?** reuses the tab (`window.open(url, "ova-rulebook")`),
-  are checked in Phase 13.
+  are checked in Phase 13.~~ Both do, in Chromium and Firefox, given a
+  fresh Blob URL each time (Phase 13).
 
 ### The portrait
 
@@ -1183,6 +1184,11 @@ markdown.test.ts` from `ui`'s `markdown_test.go`, with its labels.
     which returns true and fires a `copy` event with the text selected.
     Playwright can't read Chromium's clipboard back, so the `copy`
     event is the evidence.
+  - (Phase 13: Chromium 158's full build, which the browser tests use
+    since, takes `writeText` on `file://`, as Firefox does, but refuses
+    `readText`; the headless shell above refused it. The browser test
+    now also refuses `writeText` itself, so the fallback is exercised
+    in both browsers.)
   - So `copyToClipboard` tries `writeText`, falls back to the selection
     when refused (or when there is no clipboard API), and, if both
     fail, tells the user to select the sheet and copy it (`CantCopy`).
@@ -1231,12 +1237,76 @@ markdown.test.ts` from `ui`'s `markdown_test.go`, with its labels.
   - Copy copying the sheet when Inline is checked;
   - the name not kept.
 
-## Phase 13 The rulebook
+## Phase 13 The rulebook [done]
 
 Rulebook > Choose PDF... and Open; every "?" button; the page
 reached, in headless Chromium and Firefox, from `file://`, with a
 small PDF made for the test (never the rulebook); whether a second "?"
 reuses the tab. Record what each browser does under "Findings".
+
+### Phase 13: decisions and findings
+
+- `src/ui/rulebook.ts`'s `Rulebook` keeps the `File` chosen for the
+  session (`chosen`, `choose`) and makes its URLs: `url(page)` is a
+  fresh `blob:` URL of it with `#page=` `rules.pdfIndex(page)` (the
+  printed page + 2), the one before revoked a minute later. `isPdf`
+  takes a file whose type says PDF or whose name ends in `.pdf`.
+- The Window: **Rulebook > Open** is `openPage(1)`; **Choose PDF...**
+  is `chooseRulebook`, which refuses a file that isn't a PDF ("NAME
+  isn't a PDF: choose the rulebook's PDF.") and keeps the one before.
+  `openPage` is `openRulebook`: with a PDF chosen it opens it at once;
+  with none it first asks (`confirm`, `NoRulebook`, its button "Choose
+  PDF..."), Cancel ending it, and OK opening the chooser and then the
+  tab. Go opens its chooser at once; a page's file chooser says
+  nothing of why it opened, so the page says first. A new Window
+  function field, `openTab(url)`, is `window.open(url, "ova-rulebook")`
+  and says whether the browser opened it; refused, the user is told
+  `TabBlocked`. The tests replace it (`Fakes.tabs`, `Fakes.blocked`).
+- **The browsers' PDF viewers** (Playwright 1.65, headless,
+  `file://`, a PDF made by `test/browser/pdf.ts`):
+  - Playwright's default Chromium, the headless shell, has no PDF
+    viewer (the tab's URL stays empty), and its Firefox sets
+    `pdfjs.disabled`, so the PDF is downloaded. `playwright.config.ts`
+    now runs Chromium's full build (`channel: "chromium"`, 158) and
+    Firefox 159 with `pdfjs.disabled` false, for every browser test.
+  - Both open the tab from a click and from the file chooser's change
+    after the question, give it the name, and reuse it for the next
+    `window.open` with the same name.
+  - Both honour `#page=N` on a `blob:` URL.
+  - **Chromium ignores a fragment-only change in the reused tab**: a
+    tab showing `blob:X#page=3`, sent `blob:X#page=5`, changes its
+    address but stays at page 3. A fresh `blob:` URL of the same file
+    shows its page. Firefox goes to the page either way. Hence a fresh
+    URL each time.
+  - Firefox's pdf.js says the page it shows
+    (`PDFViewerApplication.page`); Chromium's viewer says it in its
+    "Page number" field, in a `chrome-extension:` frame Playwright can
+    read. Firefox shows page 1 for a page beyond the PDF's end.
+  - The full Chromium build takes `navigator.clipboard.writeText` on
+    `file://` (Phase 12's finding was the headless shell's).
+- `test/ui/rulebook.test.ts` ports Go's rulebook checks
+  (`limits_test.go`'s second half, and "Rulebook > Open opens it at
+  page 1") with their labels where they apply: asked for and
+  cancelled; the chooser cancelled; chosen, opened at page 1 (the
+  PDF's 3); found the next time, not asked again; a fresh URL each
+  time, the one before revoked after a minute; ? at the item's page;
+  a file that isn't a PDF refused; Choose PDF... used from then on,
+  and kept when cancelled; a blocked tab told; ? asking first with none
+  chosen; `isPdf`. Go's path kept between sessions and its Viewer...
+  have no counterpart.
+- `test/browser/rulebook.spec.ts` (Chromium and Firefox): ? with none
+  chosen asks, Choose PDF... in the dialog opens the chooser, and the
+  PDF opens in a new tab at page 56 (Flight, p. 54); Rulebook > Open
+  shows page 3 in the same tab; Choose PDF... takes another PDF, and ?
+  shows its page 52 (Attack, p. 50), still in that tab; the question
+  cancelled opens nothing; no requests, no errors; screenshots.
+- Planted, failing:
+  - in the unit tests: the page offset left out; the URL reused;
+    revoked at once; Open not at page 1; a blocked tab not told; a
+    non-PDF accepted; Cancel ignored; asked every time; not asked;
+  - in the browser test: the URL reused (Chromium stays at its page;
+    Firefox keeps the first PDF); the tab not named (both open a tab
+    each time).
 
 ## Phase 14 Release
 
@@ -1292,6 +1362,13 @@ and the browsers that ova_cg_go's design didn't have to know.
   (`default-src 'none'`, with inline script and style, and `blob:` and
   `data:` images for the portrait), so the no-network rule is enforced
   by the browser as well as tested.
+- **The rulebook's tab** (Phase 13, headless Chromium 158's full build
+  and Firefox 159 with pdf.js on): both open `window.open(blobURL +
+  "#page=N", "ova-rulebook")` at page N and reuse the named tab; but
+  Chromium's viewer ignores a change of the fragment alone, so each
+  opening makes a fresh `blob:` URL. Playwright's defaults have no PDF
+  viewer (the headless shell; Firefox's `pdfjs.disabled`), so the
+  tests run the full Chromium build and turn pdf.js on.
 
 ## Open questions
 

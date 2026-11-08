@@ -31,6 +31,8 @@ export interface Fakes {
   downloads: { name: string; text: string }[];
   copied: string | undefined; // what copyText put on the clipboard last
   page: number; // the last page openPage was asked for
+  tabs: string[]; // the URLs openTab opened, in order
+  blocked: boolean; // whether openTab is refused
 }
 
 /** A fresh document with the page's #app, on happy-dom. */
@@ -66,6 +68,8 @@ export function newWindow(): {
     downloads: [],
     copied: undefined,
     page: 0,
+    tabs: [],
+    blocked: false,
   };
   w.tell = (text) => {
     f.tells++;
@@ -103,6 +107,11 @@ export function newWindow(): {
     f.copied = text;
   };
   w.openPage = (p) => (f.page = p);
+  w.openTab = (url) => {
+    if (f.blocked) return false;
+    f.tabs.push(url);
+    return true;
+  };
   return { w, f, doc, happy };
 }
 

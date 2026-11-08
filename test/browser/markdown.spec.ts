@@ -36,28 +36,50 @@ test("the Markdown tab: Copy, Save Markdown..., Inline", async ({
     path: `obj/screenshots/${browserName}-markdown.png`,
   });
 
-  // Copy: Firefox takes writeText and gives it back; Chromium refuses
-  // it on file:// and won't give its clipboard back, so the fallback's
-  // copy event, with the sheet selected, is what shows it copied.
+  // Copy: Firefox and Chromium's full build take writeText, but only
+  // Firefox gives it back with readText; Chromium's headless shell
+  // refused it, and its fallback's copy event, with the sheet selected,
+  // showed it copied. So what writeText was given, or else what the
+  // copy event saw, is what was copied.
   await page.evaluate(() => {
     const g = window as unknown as { copied?: string };
+    const clipboard = navigator.clipboard;
+    const write = clipboard.writeText.bind(clipboard);
+    clipboard.writeText = (t: string) =>
+      write(t).then(() => {
+        g.copied = t;
+      });
     document.addEventListener("copy", () => {
       g.copied = String(document.getSelection());
     });
   });
   await page.getByRole("button", { name: "Copy" }).click();
   await expect(page.locator("dialog[open]")).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { copied?: string }).copied),
+    )
+    .toBe(ai);
   if (browserName === "firefox") {
-    await expect
-      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toBe(ai);
-  } else {
-    await expect
-      .poll(() =>
-        page.evaluate(() => (window as unknown as { copied?: string }).copied),
-      )
-      .toBe(ai);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(ai);
   }
+  await expect(page.locator(".copy-buffer")).toHaveCount(0);
+
+  // writeText refused, as Chromium's headless shell did: the fallback,
+  // the sheet selected and execCommand("copy"), in each browser.
+  await page.evaluate(() => {
+    const g = window as unknown as { copied?: string };
+    g.copied = undefined;
+    navigator.clipboard.writeText = () =>
+      Promise.reject(new DOMException("refused", "NotAllowedError"));
+  });
+  await page.getByRole("button", { name: "Copy" }).click();
+  await expect
+    .poll(() =>
+      page.evaluate(() => (window as unknown as { copied?: string }).copied),
+    )
+    .toBe(ai);
+  await expect(page.locator("dialog[open]")).toHaveCount(0);
   await expect(page.locator(".copy-buffer")).toHaveCount(0);
 
   // Save Markdown...: the name suggested, the sheet downloaded.

@@ -12,9 +12,10 @@
 // modified (changed), and the title says so with " *".
 //
 // What would wait for the user (a message, a question, a file chooser, a
-// line of text, a download, the rulebook) goes through a function field
-// (tell, ask, confirm, chooseFile, askText, download, openPage), each
-// taking a callback for its answer, so a test can answer it.
+// line of text, a download, the clipboard, the rulebook) goes through a
+// function field (tell, ask, confirm, chooseFile, askText, download,
+// copyText, openPage, openTab), each taking a callback for its answer
+// where it has one, so a test can answer it.
 //
 // Files (PLAN.md, "Files in the browser"): Open... reads a file the user
 // chooses, or drops on the page; Save and Save As... download, and a
@@ -50,6 +51,7 @@ import { AttackDialog } from "./attack.ts";
 import { Background } from "./background.ts";
 import { LinkedDialog } from "./linked.ts";
 import { CantCopy, copyToClipboard, MarkdownView } from "./markdowntab.ts";
+import { isPdf, pdfTypes, Rulebook, RulebookTab } from "./rulebook.ts";
 import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
@@ -59,6 +61,16 @@ import { keyMatches, MenuBar, MenuItem, Separator, type Key } from "./menu.ts";
 export const Title = dialogs.Title;
 export type Answer = dialogs.Answer;
 export const { SaveFirst, Discard, Cancel } = dialogs;
+
+/** What ? asks with no rulebook chosen. */
+export const NoRulebook =
+  "The rulebook's PDF hasn't been chosen. Choose it now? " +
+  "The page keeps it until the page is closed.";
+
+/** What ? says when the browser won't open the rulebook's tab. */
+export const TabBlocked =
+  "The browser didn't open the rulebook's tab: " +
+  "allow this page's pop-ups, then try again.";
 
 /** The characters' <select>'s width, ova_cg_go's CharacterW. */
 export const CharacterW = 230;
@@ -276,6 +288,8 @@ export class Window {
   readonly background: Background;
   /** The Markdown tab */
   readonly markdown: MarkdownView;
+  /** The rulebook's PDF, once chosen */
+  readonly rulebook: Rulebook;
 
   /**
    * The file's characters, in order, and the one shown,
@@ -297,7 +311,8 @@ export class Window {
    * asks for a line of text, showing text to begin with (ok false:
    * cancelled); download hands text to the browser as the file name;
    * copyText puts text on the clipboard; openPage opens the rulebook at
-   * a printed page.
+   * a printed page (openRulebook, unless a test replaces it); openTab
+   * opens url in the rulebook's tab, saying whether the browser let it.
    */
   tell: (text: string) => void;
   ask: (question: string, answer: (a: Answer) => void) => void;
@@ -311,6 +326,7 @@ export class Window {
   download: (name: string, text: string) => void;
   copyText: (text: string) => void;
   openPage: (page: number) => void;
+  openTab: (url: string) => boolean;
 
   /** The fields being set from the character: no change to report. */
   filling = false;
@@ -322,6 +338,9 @@ export class Window {
     if (app === null) throw new Error("the page has no #app");
     const d = new dialogs.Dialogs(doc);
     this.dialogs = d;
+    const view = doc.defaultView;
+    if (view === null) throw new Error("the document has no window");
+    this.rulebook = new Rulebook(view);
     this.tell = (text) => d.tell(text);
     this.ask = (q, answer) => d.ask(q, answer);
     this.confirm = (q, yes, then) => d.confirm(q, yes, then);
@@ -330,7 +349,8 @@ export class Window {
     this.download = (name, text) => this.downloadText(name, text);
     this.copyText = (text) =>
       copyToClipboard(doc, text, () => this.tell(CantCopy));
-    this.openPage = () => {}; // Phase 13: the rulebook
+    this.openPage = (page) => this.openRulebook(page);
+    this.openTab = (url) => this.openRulebookTab(url);
 
     const item = (label: string, key?: Key, action?: () => void) =>
       new MenuItem(doc, label, key, action);
@@ -367,8 +387,10 @@ export class Window {
     this.previousItem = item("Previous Character", keys.previous, () =>
       this.stepCharacter(-1),
     );
-    this.rulebookItem = item("Open"); // Phase 13
-    this.choosePdfItem = item("Choose PDF..."); // Phase 13
+    this.rulebookItem = item("Open", undefined, () => this.openPage(1));
+    this.choosePdfItem = item("Choose PDF...", undefined, () =>
+      this.chooseRulebook(() => {}),
+    );
     this.menu = new MenuBar(doc, [
       {
         label: "File",
@@ -1284,7 +1306,63 @@ export class Window {
     e.preventDefault();
   }
 
+  // ---- The rulebook ----
+
+  /**
+   * chooseRulebook asks for the rulebook's PDF and uses it from now on;
+   * then(true) once one is chosen. A file that isn't a PDF is said so
+   * and not used: then(false). A cancelled chooser calls nothing (see
+   * fileDialog).
+   */
+  chooseRulebook(then: (ok: boolean) => void): void {
+    this.chooseFile(pdfTypes, (f) => {
+      if (!isPdf(f)) {
+        this.tell(f.name + " isn't a PDF: choose the rulebook's PDF.");
+        then(false);
+        return;
+      }
+      this.rulebook.choose(f);
+      then(true);
+    });
+  }
+
+  /**
+   * openRulebook opens the rulebook at printed page page. With none
+   * chosen it asks whether to choose it first, as ova_cg_po asks once
+   * for a rulebook it can't find; then opens it there.
+   */
+  openRulebook(page: number): void {
+    if (this.rulebook.chosen) {
+      this.showRulebook(page);
+      return;
+    }
+    this.confirm(NoRulebook, "Choose PDF...", (ok) => {
+      if (!ok) return;
+      this.chooseRulebook((chosen) => {
+        if (chosen) this.showRulebook(page);
+      });
+    });
+  }
+
+  /** showRulebook opens the PDF chosen at printed page page, in its tab. */
+  private showRulebook(page: number): void {
+    if (!this.openTab(this.rulebook.url(page))) this.tell(TabBlocked);
+  }
+
   // ---- What would wait for the user, done by the browser ----
+
+  /**
+   * openRulebookTab is openTab's: window.open in the tab named
+   * RulebookTab. Headless Chromium 158 and Firefox 159 open it from a
+   * click, and from the file chooser's change after the question
+   * openRulebook asks (test/browser/rulebook.spec.ts); window.open
+   * gives null when a browser blocks it.
+   */
+  private openRulebookTab(url: string): boolean {
+    const view = this.doc.defaultView;
+    if (view === null) throw new Error("the document has no window");
+    return view.open(url, RulebookTab) !== null;
+  }
 
   /**
    * fileDialog is chooseFile's: a file input, never put in the page,

@@ -117,11 +117,12 @@ export function markdownName(text: string): string {
  * browser won't. It tries navigator.clipboard.writeText, then, refused,
  * a hidden <textarea> holding text, focused and selected, and
  * document.execCommand("copy"). On file://, after a click, headless
- * Firefox 159 takes writeText (readText gives the text back); headless
- * Chromium 158 refuses it (NotAllowedError, "Write permission denied")
- * and takes the fallback: execCommand gives true and a copy event
- * fires with the text selected. Seen under Playwright, which can't
- * read Chromium's clipboard back.
+ * Firefox 159 and Chromium 158's full build take writeText (Firefox's
+ * readText gives the text back, Chromium's is refused); Chromium 158's
+ * headless shell refuses writeText (NotAllowedError, "Write permission
+ * denied"). With writeText refused, the fallback works in all three:
+ * execCommand gives true and a copy event fires with the text
+ * selected. Seen under Playwright.
  */
 export function copyToClipboard(
   doc: Document,
