@@ -134,16 +134,15 @@ test("every key reaches the page and is prevented", async ({ page }) => {
     });
   });
   const pressed: [string, string][] = [
-    ["Control+e", "KeyE"],
     ["Alt+Shift+N", "KeyN"],
     ["Alt+Shift+T", "KeyT"],
     ["Alt+Shift+PageDown", "PageDown"],
     ["Alt+Shift+PageUp", "PageUp"],
   ];
   for (const [key] of pressed) await page.keyboard.press(key);
-  // The Saves last, after New: a named character, so Ctrl+S downloads;
-  // then Ctrl+Shift+S asks for a name, and a key under a dialog is the
-  // dialog's.
+  // The Saves after New: a named character, so Ctrl+S downloads; then
+  // Ctrl+Shift+S asks for a name. Ctrl+E (Limits...) last, under that
+  // dialog: prevented, but it does nothing.
   await page.evaluate(() => {
     (
       globalThis as unknown as { ova: { character: { name: string } } }
@@ -152,6 +151,7 @@ test("every key reaches the page and is prevented", async ({ page }) => {
   const saves: [string, string][] = [
     ["Control+s", "KeyS"],
     ["Control+Shift+S", "KeyS"],
+    ["Control+e", "KeyE"],
   ];
   for (const [key] of saves) await page.keyboard.press(key);
   pressed.push(...saves);
@@ -160,6 +160,7 @@ test("every key reaches the page and is prevented", async ({ page }) => {
   );
   expect(seen).toEqual(pressed.map(([, code]) => `${code} true`));
   await expect(page).toHaveTitle(title + " - Ai.yaml"); // Ctrl+S saved
+  await expect(page.locator("dialog[open]")).toHaveCount(1);
   await expect(page.locator("dialog[open]")).toContainText(
     "Save the characters as:",
   );

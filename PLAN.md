@@ -361,7 +361,10 @@ the page in both, so the browsers give it up too.
 | Ctrl+PgDn, Ctrl+PgUp (next, previous character) | Alt+Shift+PgDn, Alt+Shift+PgUp | the browsers keep them (next, previous tab) |
 
 A key whose item is greyed is still prevented, so it never does what
-the browser would do with it instead.
+the browser would do with it instead; so is a key pressed while a
+dialog is open, which does nothing (Phase 10: before that it went to
+the browser, and Ctrl+S under the Limits dialog would have saved the
+web page).
 
 The menus show each item's key, so a user can find it.
 
@@ -1048,11 +1051,58 @@ form. `test/ui/linked.test.ts` from `linked_test.go`.
   - the ✓ without its empty alternative text (browser test);
   - an open dialog not a flex column (browser test).
 
-## Phase 10 Limits and Boss NPCs
+## Phase 10 Limits and Boss NPCs [done]
 
 The Limits dialog, the red totals, the warnings with their pages; a
 Boss's Abilities with the divider, kept with a warning when the sheet
 stops being a Boss. `test/ui/limits.test.ts` from `limits_test.go`.
+
+### Phase 10: decisions and findings
+
+- Character > Limits... is `src/ui/settings.ts`, Go's `SettingsDialog`.
+  As in Go, it edits the character's options live, so the totals,
+  warnings and lists behind it follow each change (`limitsChanged`).
+  Cancel and Escape put back the options and the title's mark as they
+  were. A rule turned off keeps its number but doesn't use or save it
+  (`same`). The options: block is saved while any rule is on, or when
+  the file had one and nothing changed.
+- Each rule's name carries its page (`rules.pageLabel`: "Base Zero
+  (p. 21): the Character Total within"), unlike Go's plain labels,
+  because every name on the page shows its page. Each row also has a ?
+  at that page.
+- The red totals, the Boss divider and the NotBoss warning were
+  already done with the sheet in Phase 7 (`sheet.test.ts`'s
+  `bossAbilities`), so this phase only drives them through the dialog.
+- `limits.test.ts` ports the Limits half of `TestLimits`, with its
+  labels. Its other half, the rulebook and the viewer, is Phase 13's.
+  A second test adds what the page has beyond Go's:
+  - Ctrl+E opens the dialog, with the focus on Base Zero;
+  - each rule's name has its page;
+  - Escape works as Cancel.
+- A finding: the window's keys went unprevented while a dialog was
+  open, so the browser got them. Ctrl+S under the Limits dialog would
+  have opened the browser's Save Page. A key is now prevented first and
+  then does nothing under a dialog. Phase 5's `window.test.ts` check,
+  which expected the key not to be prevented, says so now. In
+  `shell.spec.ts`, Ctrl+E now comes last, under the Save As dialog,
+  because it opens Limits... and the keys after it would be under it.
+- The window's menu test now counts Limits... as enabled. Right from
+  File lands on it, Character's first item.
+- `test/browser/limits.spec.ts` (Chromium and Firefox, headless):
+  - Ctrl+E opens the dialog, modal and named "Limits";
+  - Base Zero, clicked, with its range typed as 0, turns the Character
+    Total red and marks the title;
+  - OK is in view;
+  - Escape puts it all back;
+  - the page makes no request;
+  - it takes a screenshot (`obj/screenshots/*-limits.png`).
+- Planted, failing:
+  - `same` ignoring Base Zero's range;
+  - Cancel not putting back the options;
+  - the title's mark not put back on Cancel;
+  - half cost always active;
+  - `limitsChanged` not refreshing the Weaknesses;
+  - keys under a dialog unprevented (unit and browser tests).
 
 ## Phase 11 Several characters in a file
 

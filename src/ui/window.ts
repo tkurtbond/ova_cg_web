@@ -33,7 +33,8 @@
 // The chosen Ability's linked content, a Transformation's form, a
 // Magic's spells, a Companion's or Vehicle's sheet, is linked.ts's
 // dialog, opened by the button beside its END; Character > Transformed
-// form shows the sheet as the form's, or not.
+// form shows the sheet as the form's, or not; Character > Limits... is
+// settings.ts's dialog.
 //
 // The Background and Fluff tabs are background.ts's. The Markdown tab
 // is empty until its phase, and a menu item whose phase hasn't come has
@@ -47,6 +48,7 @@ import * as save from "../core/save.ts";
 import { AttackDialog } from "./attack.ts";
 import { Background } from "./background.ts";
 import { LinkedDialog } from "./linked.ts";
+import { SettingsDialog } from "./settings.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
 import { bold, el, Lines, NumberBox, notANumber } from "./widgets.ts";
@@ -264,6 +266,10 @@ export class Window {
   attack: AttackDialog | undefined = undefined;
   /** The linked content's dialog; undefined when closed */
   linked: LinkedDialog | undefined = undefined;
+  /** Character > Limits...'s dialog; undefined when closed */
+  settings: SettingsDialog | undefined = undefined;
+  /** modified, when Limits... opened */
+  private wasModified = false;
   /** The Background and Fluff tabs */
   readonly background: Background;
 
@@ -327,7 +333,7 @@ export class Window {
     this.saveAsItem = item("Save As...", keys.saveAs, () =>
       this.saveAs(() => {}),
     );
-    this.limitsItem = item("Limits...", keys.limits); // Phase 10
+    this.limitsItem = item("Limits...", keys.limits, () => this.editLimits());
     this.transformedItem = new MenuItem(
       doc,
       "Transformed form",
@@ -622,13 +628,15 @@ export class Window {
    * key is a key pressed anywhere on the page: a menu item's, which it
    * does if it can. The browser's own use of the key is prevented even
    * when the item is disabled, so the key never does something else
-   * there. While a dialog is open the page's keys are the dialog's.
+   * there. While a dialog is open the keys do nothing, but are still
+   * prevented: Ctrl+S under the Limits dialog mustn't save the web page.
    */
   private key(e: KeyboardEvent): void {
-    if (e.defaultPrevented || this.dialogs.open) return;
+    if (e.defaultPrevented) return;
     for (const it of this.menu.items()) {
       if (it.key === undefined || !keyMatches(it.key, e)) continue;
       e.preventDefault();
+      if (this.dialogs.open) return;
       this.menu.close(false);
       if (!it.disabled) it.action?.();
       return;
@@ -960,6 +968,32 @@ export class Window {
 
   private showTransformed(): void {
     this.transformedItem.checked = this.character.transformed;
+  }
+
+  /**
+   * limitsChanged follows a change of the limits: changed, and the lists,
+   * which show Scaled Cost's points only under it.
+   */
+  limitsChanged(): void {
+    this.changed();
+    this.abilities.refresh(this.abilities.selected());
+    this.weaknesses.refresh(this.weaknesses.selected());
+  }
+
+  /**
+   * editLimits is Character > Limits...: the settings dialog, which tells
+   * limitsChanged each change. Cancel puts the options back, and the
+   * title's mark as it was.
+   */
+  private editLimits(): void {
+    if (this.settings !== undefined) return;
+    this.wasModified = this.modified;
+    SettingsDialog.editSettings(this, this.character, (ok) => {
+      if (!ok) {
+        this.modified = this.wasModified;
+        this.showTitle();
+      }
+    });
   }
 
   // ---- Files ----

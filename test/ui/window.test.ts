@@ -100,8 +100,8 @@ test("the keys wait while a dialog is open", () => {
     shiftKey: true,
   });
   assert.ok(
-    !n.defaultPrevented && w.file === "Ai.yaml",
-    "Alt+Shift+N does nothing under a dialog",
+    n.defaultPrevented && w.file === "Ai.yaml",
+    "Alt+Shift+N does nothing under a dialog, but is prevented",
   );
   press(doc, { key: "Escape" });
   assert.ok(!w.dialogs.open, "Escape closes the dialog");
@@ -176,8 +176,8 @@ test("the menus: greyed until their phase, and by keyboard", () => {
     .map((it) => it.label);
   assert.deepEqual(
     enabled,
-    ["New", "Open...", "Save", "Save As...", "Transformed form"],
-    "only File's items and Transformed form do anything yet",
+    ["New", "Open...", "Save", "Save As...", "Limits...", "Transformed form"],
+    "only File's items, Limits... and Transformed form do anything yet",
   );
   const tops = [0, 1, 2].map((i) => w.menu.top(i));
   assert.deepEqual(
@@ -208,10 +208,7 @@ test("the menus: greyed until their phase, and by keyboard", () => {
       w.menu.current === 1 && w.menu.popup(0).hidden === true,
       "Right: Character open, File shut",
     ],
-    [
-      doc.activeElement === w.transformedItem.button,
-      "on its one item, Transformed form",
-    ],
+    [doc.activeElement === w.limitsItem.button, "on its first item, Limits..."],
   ]);
   press(doc, { key: "ArrowRight" });
   checks([
