@@ -1395,20 +1395,29 @@ Done (2026-11-07):
   `package.json` and a 12-digit commit.
 - **`make release`** refuses a tree with uncommitted (tracked)
   changes, a version already tagged (after `git fetch --tags origin`,
-  so a tag on GitHub counts) and a HEAD not on `origin/main`; then
-  builds the page and runs `gh release create vVERSION
-  dist/ova_cg_web.html --target HEAD`, which makes the tag on GitHub.
-  `GH=echo` shows the command instead. Tried in a scratch clone with a
-  local bare repository as origin and `GH=echo`: each refusal, and the
-  command for a clean, pushed, untagged tree. README.md, "Making a
-  release", gives the steps. The version is set with `make version
-  V=X.Y.Z`, which refuses anything else and runs `npm version
-  --no-git-tag-version` (tried on copies: an empty, two-part,
-  `v`-prefixed and pre-release version refused; 0.1.0 set in both
-  files; the same again refused by npm); it is still 0.0.0, and the
-  first release's
-  number is the user's to choose. The repository is private, so its releases are
-  visible only to those it is shared with.
+  so a tag on GitHub counts) and a HEAD not on `origin/main`. Then it
+  builds the page, writes `dist/SHA256SUMS` (`sha256sum`, run in
+  `dist/` so the name is bare) and signs it with gpg
+  (`dist/SHA256SUMS.asc`, armored, detached, verified at once), makes
+  a signed annotated tag `vVERSION` (`git tag -s`) and pushes it, and
+  runs `gh release create vVERSION --verify-tag` with the page and
+  both files (the user's request, 2026-11-08). `GPG_KEY` picks the
+  key; `DRY=1` shows the tag, the push and the gh command instead of
+  running them; `GH=echo` runs all but gh. Tried in a scratch clone,
+  with a local bare repository as origin and a throwaway ed25519 key
+  in a scratch `GNUPGHOME`: each refusal; `DRY=1` signing and making
+  no tag; `GH=echo` pushing a tag whose signature `git verify-tag`
+  takes, a `SHA256SUMS` that `sha256sum -c` and `gpg --verify` take,
+  and the gh command; a second run refused as tagged; a page changed
+  after failing `sha256sum -c`. README.md, "Making a release", gives
+  the steps, and how to check a download.
+- The version is set with `make version V=X.Y.Z`, which refuses
+  anything else and runs `npm version --no-git-tag-version` (tried on
+  copies: an empty, two-part, `v`-prefixed and pre-release version
+  refused; 0.1.0 set in both files; the same again refused by npm). It
+  is still 0.0.0, and the first release's number is the user's to
+  choose. The repository is private, so its releases are visible only
+  to those it is shared with.
 
 ## Testing
 

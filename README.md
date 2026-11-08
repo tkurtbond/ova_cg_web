@@ -272,12 +272,23 @@ The build refuses a page larger than its budget (256 KiB, in
    nor tags), and commit.
 2. Run `make clean check test test-browser`.
 3. Push.
-4. `make release` (needs `gh`, logged in). It refuses a tree with
-   uncommitted changes, a version already tagged (here or on GitHub)
-   and a commit not on `origin/main`; then it builds the page and runs
-   `gh release create vVERSION dist/ova_cg_web.html`, which tags the
-   commit on GitHub and attaches the page. `make release GH=echo` shows
-   the `gh` command without running it.
+4. `make release` (needs `gh`, logged in, and your gpg key). It refuses
+   a tree with uncommitted changes, a version already tagged (here or
+   on GitHub) and a commit not on `origin/main`. Then it builds the
+   page, writes `dist/SHA256SUMS` and signs it (`SHA256SUMS.asc`),
+   makes a signed tag `vVERSION` and pushes it, and runs `gh release
+   create` for that tag with the three files attached. gpg may ask for
+   your passphrase, twice. `GPG_KEY=ID` picks the key (else gpg's and
+   git's default for your email); `make release DRY=1` builds and
+   signs, but only shows the tag, the push and the `gh` command.
+
+To check a downloaded page, with the release's three files in one
+folder:
+
+```sh
+gpg --verify SHA256SUMS.asc SHA256SUMS
+sha256sum -c SHA256SUMS
+```
 
 ## Documents
 

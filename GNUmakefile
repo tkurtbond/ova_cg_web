@@ -90,26 +90,42 @@ version:
 	$(NPM) version --no-git-tag-version $(V)
 
 # A release (PLAN.md, Phase 14.3): the page built from a committed,
-# pushed tree and attached to a GitHub release tagged vVERSION
-# (package.json's version), which gh creates. Refuses a tree with
+# pushed tree, its SHA256SUMS signed with gpg, a signed tag vVERSION
+# (package.json's version) pushed, and a GitHub release of that tag
+# with the three files, which gh creates. Refuses a tree with
 # uncommitted changes, a version already tagged here or on origin, and
 # a commit not on origin/main. Run make check test test-browser first.
-# GH=echo shows the gh command without running it.
+#
+# GPG_KEY=ID signs with that key, else gpg's and git's default for
+# your email. DRY=1 builds and signs SHA256SUMS but only shows the tag,
+# the push and the gh command. If gh fails once the tag is pushed, run
+# the gh command it shows by hand.
 GH      ?= gh
+GPG     ?= gpg
+GPG_KEY ?=
+DRY     ?=
 VERSION  = $(shell $(NODE) -p 'require("./package.json").version')
+TAG      = v$(VERSION)
+SUMS    := dist/SHA256SUMS
+run      = $(if $(DRY),@echo "would run:",)
 release: node_modules
 	@test -z "$$(git status --porcelain --untracked-files=no)" || \
 	  { echo "release: the tree has uncommitted changes"; exit 1; }
 	@git fetch -q --tags origin
-	@! git rev-parse -q --verify "refs/tags/v$(VERSION)" >/dev/null || \
-	  { echo "release: v$(VERSION) is already tagged: set a new version"; exit 1; }
+	@! git rev-parse -q --verify "refs/tags/$(TAG)" >/dev/null || \
+	  { echo "release: $(TAG) is already tagged: set a new version"; exit 1; }
 	@git merge-base --is-ancestor HEAD origin/main || \
 	  { echo "release: HEAD isn't on origin/main: push first"; exit 1; }
 	$(NPM) run -s build
-	$(GH) release create "v$(VERSION)" $(PAGE) \
-	  --target "$$(git rev-parse HEAD)" \
-	  --title "ova_cg_web $(VERSION)" \
-	  --notes "The OVA character generator in one web page: download ova_cg_web.html and open it in Firefox or a Chromium-based browser. Built from $$(git rev-parse --short=12 HEAD)."
+	cd dist && sha256sum ova_cg_web.html > SHA256SUMS
+	$(GPG) $(if $(GPG_KEY),--local-user $(GPG_KEY)) --yes --armor \
+	  --detach-sign --output $(SUMS).asc $(SUMS)
+	$(GPG) --verify $(SUMS).asc $(SUMS)
+	$(run) git tag -s $(if $(GPG_KEY),-u $(GPG_KEY)) -m "ova_cg_web $(VERSION)" $(TAG)
+	$(run) git push origin refs/tags/$(TAG)
+	$(run) $(GH) release create $(TAG) $(PAGE) $(SUMS) $(SUMS).asc \
+	  --verify-tag --title "ova_cg_web $(VERSION)" \
+	  --notes "The OVA character generator in one web page: download ova_cg_web.html and open it in Firefox or a Chromium-based browser. Built from $$(git rev-parse --short=12 HEAD). SHA256SUMS lists its checksum, and SHA256SUMS.asc is that list's gpg signature."
 
 clean:
 	rm -rf obj dist test-results playwright-report
