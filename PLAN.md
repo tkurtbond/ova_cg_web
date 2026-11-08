@@ -1414,9 +1414,8 @@ Done (2026-11-07):
 - The version is set with `make version V=X.Y.Z`, which refuses
   anything else and runs `npm version --no-git-tag-version` (tried on
   copies: an empty, two-part, `v`-prefixed and pre-release version
-  refused; 0.1.0 set in both files; the same again refused by npm). It
-  is still 0.0.0, and the first release's number is the user's to
-  choose. The repository is private, so its releases are visible only
+  refused; 0.1.0 set in both files; the same again refused by npm). The
+  first release is 0.1.0 (the user's choice, 2026-11-08). The repository is private, so its releases are visible only
   to those it is shared with.
 
 ## Testing
