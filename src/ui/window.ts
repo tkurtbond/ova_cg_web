@@ -30,9 +30,14 @@
 // beside it. A change goes into the character, which is computed again
 // (changed), and the numbers shown again.
 //
+// The chosen Ability's linked content, a Transformation's form, a
+// Magic's spells, a Companion's or Vehicle's sheet, is linked.ts's
+// dialog, opened by the button beside its END; Character > Transformed
+// form shows the sheet as the form's, or not.
+//
 // The Background and Fluff tabs are background.ts's. The Markdown tab
-// is empty until its phase, and a menu item whose phase hasn't come has no action and stays
-// disabled (PLAN.md, "Build order").
+// is empty until its phase, and a menu item whose phase hasn't come has
+// no action and stays disabled (PLAN.md, "Build order").
 
 import * as calc from "../core/calc.ts";
 import * as character from "../core/character.ts";
@@ -41,6 +46,7 @@ import * as rules from "../core/rules.ts";
 import * as save from "../core/save.ts";
 import { AttackDialog } from "./attack.ts";
 import { Background } from "./background.ts";
+import { LinkedDialog } from "./linked.ts";
 import * as dialogs from "./dialogs.ts";
 import { TraitPanel } from "./traitpanel.ts";
 import { bold, el, Lines, NumberBox, notANumber } from "./widgets.ts";
@@ -256,6 +262,8 @@ export class Window {
   readonly addAttack: HTMLButtonElement;
   /** The attack dialog; undefined when closed */
   attack: AttackDialog | undefined = undefined;
+  /** The linked content's dialog; undefined when closed */
+  linked: LinkedDialog | undefined = undefined;
   /** The Background and Fluff tabs */
   readonly background: Background;
 
@@ -320,7 +328,13 @@ export class Window {
       this.saveAs(() => {}),
     );
     this.limitsItem = item("Limits...", keys.limits); // Phase 10
-    this.transformedItem = item("Transformed form", keys.transformed); // Phase 9
+    this.transformedItem = new MenuItem(
+      doc,
+      "Transformed form",
+      keys.transformed,
+      () => this.toggleTransformed(),
+      true,
+    );
     this.addCharacterItem = item("Add Character"); // Phase 11, and below
     this.duplicateItem = item("Duplicate Character");
     this.removeCharacterItem = item("Remove Character...");
@@ -438,7 +452,7 @@ export class Window {
     );
     this.weaknesses.changed = () => this.changed();
     this.abilityMods = d.button("Perks and Flaws...", () => this.editMods());
-    this.abilityLinked = d.button("Linked...", () => {}); // Phase 9
+    this.abilityLinked = d.button("Linked...", () => this.editLinked());
     this.abilityEnd = new NumberBox(doc, "END", false);
     this.abilityEnd.changed = (b, ok) => this.numberChanged(b, ok);
     this.warnings = new Lines(doc, "Warnings", 65);
@@ -809,8 +823,7 @@ export class Window {
       if (t.item !== undefined) linked = t.item.linked;
     }
     this.abilityLinked.textContent = linkedLabel(linked);
-    // Phase 9 gives it its dialog: until then it stays off.
-    this.abilityLinked.disabled = true;
+    this.abilityLinked.disabled = linked === rules.NoLink;
     this.abilityEnd.display();
   }
 
@@ -821,6 +834,23 @@ export class Window {
       if (changed) this.changed();
       this.abilities.refresh(this.abilities.selected());
     });
+  }
+
+  /** editLinked is the linked content's button: its dialog. */
+  private editLinked(): void {
+    const t = this.abilities.selectedTrait();
+    if (
+      t === undefined ||
+      t.item === undefined ||
+      t.item.linked === rules.NoLink ||
+      this.linked !== undefined
+    ) {
+      return;
+    }
+    // What the linked dialog changed is in the character already.
+    LinkedDialog.editLinked(this, this.character, t, () =>
+      this.abilities.refresh(this.abilities.selected()),
+    );
   }
 
   // ---- The attacks ----
@@ -918,8 +948,19 @@ export class Window {
 
   // ---- The transformed form ----
 
-  /** showTransformed: Phase 9's menu item's check. */
-  private showTransformed(): void {}
+  /**
+   * toggleTransformed is Character > Transformed form: the sheet shown
+   * as the form's, or not, and saved so (p. 63).
+   */
+  toggleTransformed(): void {
+    this.character.transformed = !this.character.transformed;
+    this.showTransformed();
+    this.changed();
+  }
+
+  private showTransformed(): void {
+    this.transformedItem.checked = this.character.transformed;
+  }
 
   // ---- Files ----
 

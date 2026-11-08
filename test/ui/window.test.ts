@@ -176,8 +176,8 @@ test("the menus: greyed until their phase, and by keyboard", () => {
     .map((it) => it.label);
   assert.deepEqual(
     enabled,
-    ["New", "Open...", "Save", "Save As..."],
-    "only File's items do anything yet",
+    ["New", "Open...", "Save", "Save As...", "Transformed form"],
+    "only File's items and Transformed form do anything yet",
   );
   const tops = [0, 1, 2].map((i) => w.menu.top(i));
   assert.deepEqual(
@@ -209,24 +209,32 @@ test("the menus: greyed until their phase, and by keyboard", () => {
       "Right: Character open, File shut",
     ],
     [
-      doc.activeElement === tops[1],
-      "Character has no item to go to: on its name",
+      doc.activeElement === w.transformedItem.button,
+      "on its one item, Transformed form",
+    ],
+  ]);
+  press(doc, { key: "ArrowRight" });
+  checks([
+    [w.menu.current === 2, "Right: Rulebook open"],
+    [
+      doc.activeElement === tops[2],
+      "Rulebook has no item to go to: on its name",
     ],
     [
-      tops[1]!.tabIndex === 0 && tops[0]!.tabIndex === -1,
+      tops[2]!.tabIndex === 0 && tops[0]!.tabIndex === -1,
       "and it's the one in the tab order",
     ],
   ]);
   press(doc, { key: "Escape" });
   checks([
     [
-      w.menu.current === -1 && w.menu.popup(1).hidden === true,
+      w.menu.current === -1 && w.menu.popup(2).hidden === true,
       "Escape shuts it",
     ],
-    [doc.activeElement === tops[1], "back on the bar"],
+    [doc.activeElement === tops[2], "back on the bar"],
   ]);
   press(doc, { key: "ArrowLeft" });
-  assert.ok(doc.activeElement === tops[0], "Left along the bar, shut");
+  assert.ok(doc.activeElement === tops[1], "Left along the bar, shut");
   tops[0]!.click();
   assert.equal(w.menu.current, 0, "a click opens File");
   w.newItem.button.click();

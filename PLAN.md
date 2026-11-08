@@ -900,8 +900,8 @@ with Incorporeal Form.
   and the same key press pressed it, so the message closed unseen. This
   was seen in Chromium and Firefox; `sheet.spec.ts` fails without the
   fix.
-- The selected Ability's linked-content button (`abilityLinked`) stays disabled
-  until Phase 9.
+- The selected Ability's linked-content button (`abilityLinked`) stayed
+  disabled until Phase 9.
 - Go's `addAttack` method is `newAttack` here, since `addAttack` is
   the button's field.
 - Cancel in the attack dialog puts the attack back *in place*
@@ -982,13 +982,71 @@ are). `test/ui/background.test.ts` from `background_test.go`.
 - Not planted: `show()` without `filling`, since setting a value fires
   no `input` event, so that bug can't be seen.
 
-## Phase 9 Linked content
+## Phase 9 Linked content [done]
 
 The one button under the Weaknesses and its three dialogs: Form
 (two levels per level of Transformation), Spells (Witchcraft's curses
 among the Weaknesses), Companion and Vehicle (the partner's own sheet,
 Fragment, combat stats, its Incorporeal box); Character > Transformed
 form. `test/ui/linked.test.ts` from `linked_test.go`.
+
+### Phase 9: decisions and findings
+
+- The dialog is `src/ui/linked.ts`'s `LinkedDialog`, Go's, with its
+  three shapes. `test/ui/linked.test.ts` ports Go's `TestLinked` check
+  for check, with its labels. Two more tests are this page's:
+  - Escape, Transformed form's check and its key;
+  - opening each kind of linked content being no change.
+  `test/browser/linked.spec.ts` covers, in Chromium and Firefox:
+  - the dialog modal, with the attack dialog over it, and Escape
+    closing the top one first;
+  - the menu item's check, by click and by Alt+Shift+T, and the key
+    doing nothing under a dialog;
+  - the three shapes with Close in view, and screenshots.
+- As in Go, the dialog edits the character live and has only Close.
+  Close (and Escape, through the dialogs' stack) does nothing while
+  the attack dialog for a partner's attack or Perks and Flaws is open
+  above it. The window's keys are ignored while any dialog is open, so
+  Alt+Shift+T does nothing then.
+- Focus on opening goes to the first thing to edit: the form's
+  Abilities' name (Form), the spell's name (Spells), the partner's name
+  (Companion, Vehicle).
+- `PartnerIncorporeal` is written out as 6, not `TV + 1`, because
+  `window.ts` imports `linked.ts` and a module-level use of the
+  window's constants would read them before they are set. The test
+  checks that it equals `TV + 1`.
+- Changing a Magic to an Ability of another kind sets its spells to
+  `[]`, where Go's are nil; the test checks the length.
+- Transformed form is a checkable `MenuItem` (a fifth constructor
+  argument): role `menuitemcheckbox`, `aria-checked`, and a ✓ drawn by
+  CSS.
+- **Finding:** CSS-generated content is part of an element's
+  accessible name, so the item was named "✓ Transformed form…" in
+  Chromium and Firefox. `content: "\2713" / ""` (empty alternative
+  text) keeps it out, in both.
+- **Finding:** Playwright's `getByRole` matches a string `name` as a
+  substring unless `exact: true`, so the name check passed with the ✓
+  in it until it was made exact.
+- **Finding:** the Companion's sheet is taller than a 720-high window,
+  and a too-tall `<dialog>` scrolls as a whole, so Close was off the
+  bottom. An open dialog is now a flex column no taller than the
+  window, whose body scrolls, keeping the title and buttons in view.
+  The rule is on `.dialog[open]` only, since `display` on a shut
+  `<dialog>` would show it.
+- The dialog's rows use a new `field-row` class (a label, then an
+  entry taking the room left), not `name-row`, whose last child is
+  160px wide and would have caught the help button and checkboxes.
+- `window.test.ts`'s menu test now expects Transformed form enabled;
+  Right from File lands on it, and the "no item to go to" check moved
+  to Rulebook.
+- Planted, failing:
+  - `PartnerIncorporeal` as 5;
+  - Close not waiting for the attack dialog;
+  - a new partner's sheet not counted as a change;
+  - opening a partner counted as a change;
+  - the menu item's check not following `transformed`;
+  - the ✓ without its empty alternative text (browser test);
+  - an open dialog not a flex column (browser test).
 
 ## Phase 10 Limits and Boss NPCs
 

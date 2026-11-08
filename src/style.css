@@ -127,6 +127,22 @@ textarea {
   color: var(--inactive);
 }
 
+/* A checkable item's check, in the room before every label. */
+.menu-label {
+  padding-left: 1.2em;
+  position: relative;
+}
+
+/* The check is drawn, not named: aria-checked says it, and the empty
+   alternative text keeps it out of the item's accessible name, which
+   otherwise begins with it (seen in Phase 9 in Playwright's Chromium
+   and Firefox; test/browser/linked.spec.ts checks the name). */
+.menu-item[aria-checked="true"] > .menu-label::before {
+  content: "\2713" / "";
+  position: absolute;
+  left: 0;
+}
+
 .menu-separator {
   border-top: 1px solid var(--dark);
   border-bottom: 1px solid var(--light);
@@ -251,6 +267,16 @@ textarea:focus-visible {
   max-width: min(700px, 90vw);
 }
 
+/* A dialog taller than the window scrolls its body, keeping its title
+   and buttons in view (the Companion's sheet is, in a 720-high window).
+   Only an open one: display on a shut <dialog> would show it. */
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 2em);
+  box-sizing: border-box;
+}
+
 .dialog::backdrop {
   background: rgb(0 0 0 / 0.2);
 }
@@ -263,6 +289,8 @@ textarea:focus-visible {
 
 .dialog-body {
   padding: 12px 14px 4px;
+  overflow: auto;
+  min-height: 0;
 }
 
 .dialog-text {
@@ -288,6 +316,34 @@ textarea:focus-visible {
 
 button.default {
   outline: 1px solid var(--black);
+}
+
+.dialog.linked-dialog {
+  width: min(800px, 95vw); /* ova_cg_go's linked dialog is 800 wide */
+  max-width: 95vw;
+}
+
+/* A label, then its entry or choice taking the room left. */
+.field-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.field-row > input[type="text"],
+.field-row > select {
+  flex: 1;
+  min-width: 0;
+}
+
+.number-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.linked-info.red {
+  color: #c00000;
 }
 
 .dialog.attack-dialog {

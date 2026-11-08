@@ -6,8 +6,9 @@
 // along it with Left and Right, opens a menu with Down, Up, Enter or
 // Space, moves in it with Up, Down, Home and End, and leaves it with
 // Escape (back to the bar) or Tab. An item that can do nothing is
-// disabled, and shows grey. Each item shows its key, which the Window
-// takes (keyMatches). The bar has no Alt mnemonics, which would compete
+// disabled, and shows grey. An item that is on or off (Transformed form)
+// is a menuitemcheckbox, its check shown before its label. Each item
+// shows its key, which the Window takes (keyMatches). The bar has no Alt mnemonics, which would compete
 // with the browsers' own (PLAN.md, "Keys").
 
 /** A key and its modifiers; ctrl is Ctrl, or Command on a Mac. */
@@ -65,12 +66,15 @@ export class MenuItem {
   /** What the item does; undefined: nothing yet, so it is disabled. */
   readonly action: (() => void) | undefined;
   readonly button: HTMLButtonElement;
+  /** Whether the item is on or off: a menuitemcheckbox (Go's Checked) */
+  readonly checkable: boolean;
 
   constructor(
     doc: Document,
     label: string,
     key: Key | undefined,
     action: (() => void) | undefined,
+    checkable = false,
   ) {
     this.label = label;
     this.key = key;
@@ -78,8 +82,9 @@ export class MenuItem {
     const b = doc.createElement("button");
     b.type = "button";
     b.className = "menu-item";
-    b.setAttribute("role", "menuitem");
+    b.setAttribute("role", checkable ? "menuitemcheckbox" : "menuitem");
     b.tabIndex = -1;
+    this.checkable = checkable;
     const l = doc.createElement("span");
     l.className = "menu-label";
     l.textContent = label;
@@ -93,6 +98,17 @@ export class MenuItem {
     }
     this.button = b;
     this.disabled = action === undefined;
+    if (checkable) this.checked = false;
+  }
+
+  /** Whether a checkable item is on. */
+  get checked(): boolean {
+    return this.button.getAttribute("aria-checked") === "true";
+  }
+
+  set checked(v: boolean) {
+    if (!this.checkable) throw new Error(this.label + " can't be checked");
+    this.button.setAttribute("aria-checked", String(v));
   }
 
   get disabled(): boolean {
