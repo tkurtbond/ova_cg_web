@@ -7,9 +7,9 @@ and Flaws, and it works out Endurance costs, ROLL, DX, Defense,
 Health, Endurance and Threat Value as you go. It holds no rules text:
 each name shows its rulebook page, and **?** opens the rulebook's PDF,
 which you choose, at that page. Characters are loaded and saved as the
-same YAML that [ova_cg_po](../ova_cg_po) (Oberon-2, FLTK) and
-[ova_cg_go](../ova_cg_go) (Go, Fyne) write, which
-[ova_fmt_po](../ova_fmt_po) and the Ada [ova_fmt](../ova_fmt) format.
+same YAML that [ova_cg_po](https://github.com/tkurtbond/ova_cg_po) (Oberon-2, FLTK) and
+[ova_cg_go](https://github.com/tkurtbond/ova_cg_go) (Go, Fyne) write, which
+[ova_fmt_po](https://github.com/tkurtbond/ova_fmt_po) and the Ada [ova_fmt](https://github.com/tkurtbond/ova_fmt) format.
 
 It is one HTML file, `ova_cg_web.html`. Download it and open it from
 your disk in Firefox or a Chromium-based browser (Chrome, Chromium,
