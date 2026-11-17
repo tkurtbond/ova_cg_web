@@ -307,6 +307,21 @@ gpg --verify SHA256SUMS.asc SHA256SUMS
 sha256sum -c SHA256SUMS
 ```
 
+## OVA and the rulebook
+
+OVA, *OVA: The Anime Role-Playing Game*, is © 2015 Wise Turtle. This
+project is not affiliated with or endorsed by Wise Turtle. It holds
+none of the rulebook's descriptions: it knows the names of the rules'
+Abilities, Weaknesses, Perks and Flaws, the numbers attached to them,
+and the page each is described on, and it opens your own copy of the
+rulebook at that page. You need the rulebook to use it.
+
+The test fixtures in `testdata/` (and the golden files made from them in
+`test/golden/`) record the rulebook's sample
+characters so that the program's numbers can be checked against them;
+their backgrounds and descriptions are paraphrased, and only short
+captions such as attack descriptions follow the book's wording.
+
 ## Documents
 
 - [PLAN.md](PLAN.md): how the port maps ova_cg_go to TypeScript and a
